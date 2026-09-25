@@ -1,19 +1,11 @@
-import { useEffect, useState } from 'react'
+import ElectricTitle from './components/ElectricTitle'
 
 function App() {
-  const [message, setMessage] = useState('Loading...')
-
-  useEffect(() => {
-    fetch('/api/hello')
-      .then((res) => res.json())
-      .then((data) => setMessage(data.message))
-      .catch(() => setMessage('Could not reach backend — is the server running?'))
-  }, [])
-
   return (
-    <div className="mx-auto my-16 max-w-xl px-6 text-center">
-      <h1>Hackathon Project</h1>
-      <p>{message}</p>
+    <div className="flex min-h-svh items-center justify-center px-8 text-center">
+      <ElectricTitle className="font-[IBM_Plex_Mono] text-6xl font-bold uppercase tracking-wide md:text-8xl">
+        Elekto
+      </ElectricTitle>
     </div>
   )
 }
