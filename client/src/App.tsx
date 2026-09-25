@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react'
-import './App.css'
 
 function App() {
   const [message, setMessage] = useState('Loading...')
@@ -12,7 +11,7 @@ function App() {
   }, [])
 
   return (
-    <div className="app">
+    <div className="mx-auto my-16 max-w-xl px-6 text-center">
       <h1>Hackathon Project</h1>
       <p>{message}</p>
     </div>
