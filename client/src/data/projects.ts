@@ -17,7 +17,7 @@ export interface Project {
 export const MY_PROJECTS: Project[] = [
   {
     id: 'p1',
-    name: 'Onboarding Redesign',
+    name: 'Kitchen Renovation – 12 Rimu St',
     status: 'In Progress',
     owner: 'Maya Chen',
     priority: 'High',
@@ -25,13 +25,13 @@ export const MY_PROJECTS: Project[] = [
     dueDate: 'Oct 30, 2026',
     progress: '62%',
     description:
-      'A redesign of the onboarding flow to reduce drop-off during signup. Covers new wireframes, updated copy, and an A/B test plan against the current flow.',
-    type: 'Commercial',
-    address: '120 Market St, San Francisco, CA 94105',
+      'Full kitchen rewire for a 1970s weatherboard house. New circuits for the oven and induction hob, extra double outlets along the bench, and LED downlights to replace the old fluoro.',
+    type: 'Residential',
+    address: '12 Rimu St, Ponsonby, Auckland 1011',
   },
   {
     id: 'p2',
-    name: 'Auth Migration',
+    name: 'Office Fit-out – Level 3',
     status: 'On Track',
     owner: 'Sam Rivera',
     priority: 'Medium',
@@ -39,13 +39,13 @@ export const MY_PROJECTS: Project[] = [
     dueDate: 'Nov 15, 2026',
     progress: '38%',
     description:
-      'Migrating the authentication service to the new identity provider. Includes token refresh handling, session migration, and rollback plan.',
-    type: 'Residential',
-    address: '48 Elm Grove, Austin, TX 78704',
+      'Commercial fit-out for an open-plan office. New sub-board, floor boxes for the desk pods, meeting-room lighting on two-way switching, and data cabling coordination with the IT contractor.',
+    type: 'Commercial',
+    address: 'Level 3, 55 Victoria St, Wellington 6011',
   },
   {
     id: 'p3',
-    name: 'Analytics Vendor Renewal',
+    name: 'Garage Workshop Sub-board',
     status: 'At Risk',
     owner: 'Priya Nair',
     priority: 'High',
@@ -53,16 +53,16 @@ export const MY_PROJECTS: Project[] = [
     dueDate: 'Sep 28, 2026',
     progress: '81%',
     description:
-      'Vendor contract renewal for the analytics platform. Waiting on legal review before the final signature; budget already approved.',
-    type: 'Commercial',
-    address: '900 W Madison St, Chicago, IL 60607',
+      'Detached garage conversion into a workshop. New sub-board fed from the house, 3-phase outlet for a welder, and bench power along two walls.',
+    type: 'Residential',
+    address: '7 Totara Ln, Riccarton, Christchurch 8011',
   },
 ]
 
 export const SHARED_PROJECTS: Project[] = [
   {
     id: 's1',
-    name: 'Q4 Marketing Campaign',
+    name: 'Townhouse Block – Units 1–4',
     status: 'In Progress',
     owner: 'Jordan Lee',
     priority: 'Low',
@@ -70,9 +70,9 @@ export const SHARED_PROJECTS: Project[] = [
     dueDate: 'Dec 5, 2026',
     progress: '20%',
     description:
-      'Shared workspace for the Q4 marketing campaign. Includes asset requests, copy drafts, and a shared calendar of publish dates.',
+      'Shared with the main contractor. Four-unit townhouse development, engineer-designed lighting and power layout, waiting on revised drawings for Unit 3.',
     type: 'Residential',
-    address: '15 Harbor View Rd, Seattle, WA 98121',
+    address: '1–4/210 Great South Rd, Epsom, Auckland 1051',
   },
 ]
 

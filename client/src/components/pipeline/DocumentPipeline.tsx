@@ -1,5 +1,4 @@
 import { useState } from 'react'
-import { Link } from 'react-router-dom'
 
 interface PipelineDocResult {
   docId: string
@@ -23,7 +22,7 @@ const STATUS_STYLE: Record<PipelineDocResult['status'], string> = {
   error: 'text-[#E3350D]',
 }
 
-function PipelineTestPage() {
+function DocumentPipeline() {
   const [files, setFiles] = useState<File[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -53,19 +52,15 @@ function PipelineTestPage() {
   }
 
   return (
-    <div className="mx-auto flex min-h-svh max-w-5xl flex-col gap-6 px-8 py-10">
-      <Link
-        to="/"
-        className="self-start font-[DM_Sans] text-xs uppercase tracking-wide text-black/50 hover:text-black"
-      >
-        ← Back
-      </Link>
-
-      <h1 className="font-[DM_Sans] text-2xl font-semibold text-[#1a1a1a]">Document Pipeline</h1>
-      <p className="max-w-2xl font-[DM_Sans] text-sm text-black/60">
-        Upload site plans, wiring plans, or legacy job files (.pdf, .png/.jpg, .txt/.csv/.tsv). Each one
-        runs through the noise-filter and extraction pipeline and comes back as JSON.
-      </p>
+    <div className="flex h-full flex-col gap-6 overflow-auto p-6">
+      <div className="flex flex-col gap-2">
+        <h2 className="font-[DM_Sans] text-lg font-semibold text-[#1a1a1a]">Document pipeline</h2>
+        <p className="max-w-2xl font-[DM_Sans] text-sm text-black/60">
+          Upload site plans, wiring plans, or legacy job files for this project (.pdf, .png/.jpg,
+          .txt/.csv/.tsv). Each one runs through the noise-filter and extraction pipeline and comes back
+          as JSON.
+        </p>
+      </div>
 
       <form onSubmit={handleSubmit} className="flex flex-wrap items-center gap-4">
         <input
@@ -141,4 +136,4 @@ function PipelineTestPage() {
   )
 }
 
-export default PipelineTestPage
+export default DocumentPipeline
