@@ -6,11 +6,13 @@ interface ProjectSummaryProps {
   materials: MaterialsSummary
   /** Cables on the editable schedule further down the page. */
   cableCount: number
+  /** Switches the section below the workspace to the cable schedule before scrolling to it. */
+  onShowCableSchedule?: () => void
 }
 
 const nzd = new Intl.NumberFormat('en-NZ', { style: 'currency', currency: 'NZD' })
 
-function ProjectSummary({ project, materials, cableCount }: ProjectSummaryProps) {
+function ProjectSummary({ project, materials, cableCount, onShowCableSchedule }: ProjectSummaryProps) {
   const stats = [
     { label: 'Status', value: project.status },
     { label: 'Due', value: project.dueDate },
@@ -19,7 +21,7 @@ function ProjectSummary({ project, materials, cableCount }: ProjectSummaryProps)
   ]
 
   return (
-    <div className="flex flex-1 flex-col gap-4 rounded-lg border border-black/10 bg-black/[0.03] p-5 font-[DM_Sans]">
+    <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto rounded-lg border border-black/10 bg-black/[0.03] p-5 font-[DM_Sans]">
       <div>
         <span className="text-xs uppercase tracking-wide text-black/50">Project overview · {project.type}</span>
         <p className="mt-1 text-sm text-[#1a1a1a]">{project.address}</p>
@@ -79,7 +81,7 @@ function ProjectSummary({ project, materials, cableCount }: ProjectSummaryProps)
 
         <p className="mt-4 text-xs text-black/60">
           Cable schedule: {cableCount} cable{cableCount === 1 ? '' : 's'} ·{' '}
-          <a href="#cable-schedule" className="font-semibold text-[#1a1a1a] underline-offset-2 hover:underline">
+          <a href="#cable-schedule" onClick={onShowCableSchedule} className="font-semibold text-[#1a1a1a] underline-offset-2 hover:underline">
             View and edit ↓
           </a>
         </p>

@@ -34,6 +34,8 @@ const TABS: { id: WorkspaceTab; label: string }[] = [
   { id: 'documents', label: 'Documents' },
 ]
 
+type LowerTab = 'cableSchedule' | 'compliance'
+
 const backLinkClass =
   'self-start font-[DM_Sans] text-xs uppercase tracking-wide text-black/50 hover:text-black'
 
@@ -183,6 +185,14 @@ function ProjectWorkspace({ project }: { project: Project }) {
   )
   const compliance = useCompliance(drawing, project.id, documentsVersion, scheduleDocuments)
 
+  const [lowerTab, setLowerTab] = useState<LowerTab>('cableSchedule')
+  const breachCount =
+    (compliance.state.rules?.breaches.length ?? 0) + (compliance.state.aiBreaches?.length ?? 0)
+  const LOWER_TABS: { id: LowerTab; label: string; count: number }[] = [
+    { id: 'cableSchedule', label: 'Cable schedule', count: cableSchedule.rows.length },
+    { id: 'compliance', label: 'Compliance', count: breachCount },
+  ]
+
   async function replaceFile(file: File) {
     try {
       await loadAndDetect(await loadDrawingFile(file))
@@ -317,17 +327,43 @@ function ProjectWorkspace({ project }: { project: Project }) {
           </div>
           </div>
           <Inspector store={store} selection={activeSelection} />
-          <ProjectSummary project={project} materials={materials} cableCount={cableSchedule.rows.length} />
+          <ProjectSummary
+            project={project}
+            materials={materials}
+            cableCount={cableSchedule.rows.length}
+            onShowCableSchedule={() => setLowerTab('cableSchedule')}
+          />
         </aside>
       </div>
 
-      {/* Right padding = sidebar (w-96) + gap + page padding, so this lines up with the drawing column. */}
-      <div className="px-6 lg:pr-[calc(24rem+3rem)]">
-        <ComplianceBreaches state={compliance.state} onAskAi={compliance.askAi} />
-      </div>
+      <div id="cable-schedule" className="flex scroll-mt-24 flex-col gap-4 px-6">
+        <div role="tablist" className="flex gap-1 self-start rounded-full border-2 border-[#1a1a1a] bg-white p-1">
+          {LOWER_TABS.map((t) => (
+            <button
+              key={t.id}
+              type="button"
+              role="tab"
+              aria-selected={lowerTab === t.id}
+              onClick={() => setLowerTab(t.id)}
+              className={`rounded-full px-4 py-1.5 font-[DM_Sans] text-xs font-semibold tracking-wide text-[#1a1a1a] uppercase transition-colors ${
+                lowerTab === t.id ? 'bg-[#FFCC00]' : 'hover:bg-black/[0.06]'
+              }`}
+            >
+              {t.label}
+              {t.count > 0 && (
+                <span className={`ml-1.5 ${t.id === 'compliance' ? 'text-[#E3350D]' : 'text-black/50'}`}>{t.count}</span>
+              )}
+            </button>
+          ))}
+        </div>
 
-      <div id="cable-schedule" className="scroll-mt-24 px-6">
-        <CableScheduleEditor projectId={project.id} {...cableSchedule} />
+        {/* Both stay mounted so switching tabs keeps open core tables and messages. */}
+        <div className={lowerTab === 'cableSchedule' ? '' : 'hidden'}>
+          <CableScheduleEditor projectId={project.id} {...cableSchedule} />
+        </div>
+        <div className={lowerTab === 'compliance' ? '' : 'hidden'}>
+          <ComplianceBreaches state={compliance.state} onAskAi={compliance.askAi} />
+        </div>
       </div>
     </div>
   )
