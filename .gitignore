@@ -4,3 +4,7 @@ dist/
 .DS_Store
 *.log
 *.tsbuildinfo
+
+# Real client plans, jobs, and pipeline output - never commit real files or extracted PII.
+# Fixtures under server/src/pipeline/fixtures/ are synthetic and stay tracked.
+server/data/
