@@ -71,6 +71,12 @@ function ProjectOverviewPage() {
 
         <div className="w-80 shrink-0 rounded-lg border border-black/10 bg-black/[0.03] p-6">
           <span className="font-[DM_Sans] text-xs uppercase tracking-wide text-black/50">
+            {project.type}
+          </span>
+          <p className="mt-3 mb-6 font-[DM_Sans] text-sm leading-relaxed text-[#1a1a1a]">
+            {project.address}
+          </p>
+          <span className="font-[DM_Sans] text-xs uppercase tracking-wide text-black/50">
             Description
           </span>
           <p className="mt-3 font-[DM_Sans] text-sm leading-relaxed text-[#1a1a1a]">

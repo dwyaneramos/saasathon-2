@@ -1,6 +1,7 @@
 import { Route, Routes } from 'react-router-dom'
 import ClientProjectPage from './pages/ClientProjectPage'
 import LandingPage from './pages/LandingPage'
+import NewProjectPage from './pages/NewProjectPage'
 import ProjectOverviewPage from './pages/ProjectOverviewPage'
 import ProjectsPage from './pages/ProjectsPage'
 
@@ -32,6 +33,7 @@ function App() {
       <Routes>
         <Route path="/" element={<LandingPage />} />
         <Route path="/projects" element={<ProjectsPage />} />
+        <Route path="/projects/new" element={<NewProjectPage />} />
         <Route path="/projects/:id" element={<ProjectOverviewPage />} />
         <Route path="/client/projects/:id" element={<ClientProjectPage />} />
       </Routes>

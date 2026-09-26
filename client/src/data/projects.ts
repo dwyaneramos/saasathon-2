@@ -1,3 +1,5 @@
+export type ProjectType = 'Residential' | 'Commercial'
+
 export interface Project {
   id: string
   name: string
@@ -8,6 +10,8 @@ export interface Project {
   dueDate: string
   progress: string
   description: string
+  type: ProjectType
+  address: string
 }
 
 export const MY_PROJECTS: Project[] = [
@@ -22,6 +26,8 @@ export const MY_PROJECTS: Project[] = [
     progress: '62%',
     description:
       'A redesign of the onboarding flow to reduce drop-off during signup. Covers new wireframes, updated copy, and an A/B test plan against the current flow.',
+    type: 'Commercial',
+    address: '120 Market St, San Francisco, CA 94105',
   },
   {
     id: 'p2',
@@ -34,6 +40,8 @@ export const MY_PROJECTS: Project[] = [
     progress: '38%',
     description:
       'Migrating the authentication service to the new identity provider. Includes token refresh handling, session migration, and rollback plan.',
+    type: 'Residential',
+    address: '48 Elm Grove, Austin, TX 78704',
   },
   {
     id: 'p3',
@@ -46,6 +54,8 @@ export const MY_PROJECTS: Project[] = [
     progress: '81%',
     description:
       'Vendor contract renewal for the analytics platform. Waiting on legal review before the final signature; budget already approved.',
+    type: 'Commercial',
+    address: '900 W Madison St, Chicago, IL 60607',
   },
 ]
 
@@ -61,11 +71,18 @@ export const SHARED_PROJECTS: Project[] = [
     progress: '20%',
     description:
       'Shared workspace for the Q4 marketing campaign. Includes asset requests, copy drafts, and a shared calendar of publish dates.',
+    type: 'Residential',
+    address: '15 Harbor View Rd, Seattle, WA 98121',
   },
 ]
 
-export const ALL_PROJECTS: Project[] = [...MY_PROJECTS, ...SHARED_PROJECTS]
-
 export function getProjectById(id: string): Project | undefined {
-  return ALL_PROJECTS.find((project) => project.id === id)
+  return [...MY_PROJECTS, ...SHARED_PROJECTS].find((project) => project.id === id)
+}
+
+// In-memory only until there's a backend: new projects are lost on reload.
+export function addProject(project: Omit<Project, 'id'>): Project {
+  const created: Project = { ...project, id: `p${Date.now()}` }
+  MY_PROJECTS.push(created)
+  return created
 }
