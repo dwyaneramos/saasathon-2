@@ -1,12 +1,15 @@
-import ElectricTitle from './components/ElectricTitle'
+import { Route, Routes } from 'react-router-dom'
+import LandingPage from './pages/LandingPage'
+import ProjectOverviewPage from './pages/ProjectOverviewPage'
+import ProjectsPage from './pages/ProjectsPage'
 
 function App() {
   return (
-    <div className="flex min-h-svh items-center justify-center px-8 text-center">
-      <ElectricTitle className="font-[IBM_Plex_Mono] text-6xl font-bold uppercase tracking-wide md:text-8xl">
-        Elekto
-      </ElectricTitle>
-    </div>
+    <Routes>
+      <Route path="/" element={<LandingPage />} />
+      <Route path="/projects" element={<ProjectsPage />} />
+      <Route path="/projects/:id" element={<ProjectOverviewPage />} />
+    </Routes>
   )
 }
 

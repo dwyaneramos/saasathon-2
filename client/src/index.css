@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,100..1000;1,9..40,100..1000&display=swap');
 @import 'tailwindcss';
 
 * {
@@ -8,10 +8,9 @@
 body {
   margin: 0;
   overflow-x: hidden;
-  background: linear-gradient(180deg, #12151d 0%, #0a0c12 55%, #06070a 100%);
-  background-color: #06070a;
-  color: #e7eaf0;
-  font-family: 'IBM Plex Sans', system-ui, sans-serif;
+  background-color: #ffffff;
+  color: #1a1a1a;
+  font-family: 'DM Sans', system-ui, sans-serif;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
