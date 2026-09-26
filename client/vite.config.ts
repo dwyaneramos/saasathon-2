@@ -5,6 +5,9 @@ import { defineConfig } from 'vite'
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [react(), tailwindcss()],
+  // Keep existing Next.js-style local config usable while new installs use VITE_*.
+  // Both prefixes are intentionally browser-safe public Supabase settings.
+  envPrefix: ['VITE_', 'NEXT_PUBLIC_'],
   server: {
     proxy: {
       '/api': {

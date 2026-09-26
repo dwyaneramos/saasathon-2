@@ -44,7 +44,7 @@ function makeField<T>(
 }
 
 function makeTrace() {
-  return { doc_id: 'd1', page: 1, bbox: null, method: 'text-llm' as const, confidence: 0.9 };
+  return { doc_id: 'd1', page: 1, bbox: null, region: null, method: 'text-llm' as const, confidence: 0.9 };
 }
 
 function baseDoc(): ExtractionDocument {
@@ -55,6 +55,7 @@ function baseDoc(): ExtractionDocument {
     pages_total: 1,
     site_info: null,
     legend_items: [],
+    plan_symbols: [],
     circuits: [],
     switchboards: [],
     single_line_elements: [],
