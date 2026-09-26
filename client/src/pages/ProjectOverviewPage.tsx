@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState, type MouseEvent } from 'react'
 import { Link, useParams, useSearchParams } from 'react-router-dom'
 import DrawingCanvas from '../components/drawing/DrawingCanvas'
 import Inspector from '../components/drawing/Inspector'
@@ -7,12 +7,19 @@ import Toolbar from '../components/drawing/Toolbar'
 import UploadDropzone from '../components/drawing/UploadDropzone'
 import DocumentsPanel from '../components/documents/DocumentsPanel'
 import ProjectDocumentsTab from '../components/ProjectDocumentsTab'
+import { DEFAULT_WIRE } from '../data/catalogue'
 import { getProjectById, type Project } from '../lib/projects'
-import { useDrawing } from '../lib/drawingStore'
+import { detectDrawing } from '../lib/detectDrawing'
+import { newId, nextComponentLabel, useDrawing } from '../lib/drawingStore'
 import { loadDrawingFile } from '../lib/loadDrawingFile'
 import { computeMaterials } from '../lib/materials'
 import { fitView, zoomView, type View } from '../lib/view'
-import type { Selection, Tool } from '../types/drawing'
+import type { DrawingBackground, PlacedComponent, Selection, Tool } from '../types/drawing'
+
+// Components below this confidence are skipped rather than added - better to miss
+// a faint symbol than plant something that isn't really there.
+const AUTO_PLACE_CONFIDENCE = 0.5
+const AUTO_SCALE_CONFIDENCE = 0.5
 
 type WorkspaceTab = 'drawing' | 'analyse' | 'documents'
 
@@ -38,6 +45,7 @@ function ProjectWorkspace({ project }: { project: Project }) {
   })
   const [tool, setTool] = useState<Tool>({ type: 'select' })
   const [selection, setSelection] = useState<Selection>(null)
+  const [detecting, setDetecting] = useState(false)
   // The view resets to "fit" whenever a different background is loaded.
   const bgKey = background ? `${background.fileName}:${background.width}x${background.height}` : ''
   const [viewState, setViewState] = useState<{ key: string; view: View }>({ key: '', view: fitView(1, 1) })
@@ -63,6 +71,14 @@ function ProjectWorkspace({ project }: { project: Project }) {
 
   const viewCenter = { x: view.x + view.w / 2, y: view.y + view.h / 2 }
 
+  // Navigating away mid-detection unmounts this page (and its useDrawing instance) before
+  // the results ever get a chance to save - block it instead of losing the work silently.
+  function guardNavigation(e: MouseEvent) {
+    if (!detecting) return
+    e.preventDefault()
+    window.alert("Still detecting components from your plan - hang on until that finishes before navigating away.")
+  }
+
   function deleteSelection() {
     if (!activeSelection) return
     if (activeSelection.type === 'component') store.removeComponent(activeSelection.id)
@@ -70,9 +86,91 @@ function ProjectWorkspace({ project }: { project: Project }) {
     setSelection(null)
   }
 
+  // Sets the background, then asks the vision model what's already drawn on it (symbols +
+  // any stated measurement) so the drawing can go straight to AR without manual re-entry.
+  // Never invents a scale: if the plan states no measurement, metresPerPx stays unset and
+  // the user still calibrates by hand.
+  async function loadAndDetect(background: DrawingBackground) {
+    store.setBackground(background)
+    if (!background.dataUrl) return // blank sheet - nothing to detect
+
+    setDetecting(true)
+    try {
+      const result = await detectDrawing(background.dataUrl, background.width, background.height)
+
+      // A local running list so labels number correctly across the batch - store.drawing
+      // won't reflect components added earlier in this same loop until the next render.
+      const placedSoFar: PlacedComponent[] = [...store.drawing.components]
+      // Maps the model's own per-response ids (e.g. "c1") to the real component ids we
+      // generate, so wires can be linked to the actual placed component - not just guessed
+      // by proximity, which is what let some wires end up pointing at nothing.
+      const idMap = new Map<string, string>()
+      let added = 0
+      for (const detected of result.components) {
+        if (detected.confidence < AUTO_PLACE_CONFIDENCE) continue
+        const placed: PlacedComponent = {
+          id: newId(),
+          kind: detected.kind,
+          x: detected.x,
+          y: detected.y,
+          rotation: 0,
+          label: nextComponentLabel(placedSoFar, detected.kind),
+        }
+        store.addComponent(placed)
+        placedSoFar.push(placed)
+        idMap.set(detected.id, placed.id)
+        added += 1
+      }
+
+      let addedWires = 0
+      let skippedWires = 0
+      for (const detected of result.wires) {
+        if (detected.confidence < AUTO_PLACE_CONFIDENCE) continue
+
+        // Only null when the model says the wire genuinely has no component there; anything
+        // else must resolve to a component we actually placed, or this wire is dropped rather
+        // than drawn half-connected to a component that was filtered out or never existed.
+        const fromId = detected.fromComponentId ? idMap.get(detected.fromComponentId) : undefined
+        const toId = detected.toComponentId ? idMap.get(detected.toComponentId) : undefined
+        if ((detected.fromComponentId && !fromId) || (detected.toComponentId && !toId)) {
+          skippedWires += 1
+          continue
+        }
+
+        // wirePath() re-derives the endpoints from the linked component's own position, so
+        // strip the model's (slightly imprecise) traced endpoints to avoid a tiny duplicate
+        // kink where the wire meets the marker.
+        let points = detected.points
+        if (fromId) points = points.slice(1)
+        if (toId) points = points.slice(0, points.length - 1)
+
+        store.addWire({ id: newId(), fromId, toId, points, ...DEFAULT_WIRE })
+        addedWires += 1
+      }
+
+      const scaleApplied = result.metresPerPx !== null && result.scaleConfidence >= AUTO_SCALE_CONFIDENCE
+      if (scaleApplied) store.setScale(result.metresPerPx!)
+
+      window.alert(
+        `Detected ${added} component${added === 1 ? '' : 's'} and ${addedWires} wire${addedWires === 1 ? '' : 's'} on the plan` +
+          (skippedWires > 0 ? ` (skipped ${skippedWires} wire${skippedWires === 1 ? '' : 's'} that didn't clearly connect to a placed component)` : '') +
+          '. ' +
+          (scaleApplied
+            ? `Scale set automatically (${result.scaleEvidence ?? 'measurement found on the plan'}) - ready for AR.`
+            : 'No reliable measurement was found on the plan - use the SCALE tool to calibrate before using AR.'),
+      )
+    } catch (err) {
+      window.alert(
+        `Couldn't auto-detect components: ${err instanceof Error ? err.message : String(err)}. You can still place components and calibrate manually.`,
+      )
+    } finally {
+      setDetecting(false)
+    }
+  }
+
   async function replaceFile(file: File) {
     try {
-      store.setBackground(await loadDrawingFile(file))
+      await loadAndDetect(await loadDrawingFile(file))
     } catch (err) {
       window.alert(err instanceof Error ? err.message : 'Could not load that file.')
     }
@@ -134,7 +232,7 @@ function ProjectWorkspace({ project }: { project: Project }) {
             />
           ) : (
             <div className="h-full p-6">
-              <UploadDropzone onLoaded={store.setBackground} />
+              <UploadDropzone onLoaded={(bg) => void loadAndDetect(bg)} />
             </div>
           )}
           {background && (
@@ -142,6 +240,16 @@ function ProjectWorkspace({ project }: { project: Project }) {
               {background.fileName}
               {drawing.metresPerPx ? '' : ' · scale not set'}
             </span>
+          )}
+          {detecting && (
+            <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-3 bg-white/90 backdrop-blur-sm">
+              <div className="h-8 w-8 animate-spin rounded-full border-2 border-black/15 border-t-[#E3350D]" />
+              <p className="max-w-xs text-center font-[DM_Sans] text-sm text-[#1a1a1a]">
+                Detecting components from your plan - this can take up to a minute.
+                <br />
+                <span className="font-semibold">Please don't navigate away.</span>
+              </p>
+            </div>
           )}
         </div>
 
@@ -167,17 +275,27 @@ function ProjectWorkspace({ project }: { project: Project }) {
       </section>
 
       <aside className="flex w-full shrink-0 flex-col gap-4 lg:w-96 lg:min-h-0">
-        <Link to="/projects" className={backLinkClass}>
+        <Link to="/projects" className={backLinkClass} onClick={guardNavigation}>
           ← My Projects
         </Link>
         <div className="flex items-center justify-between gap-4">
           <h1 className="font-[DM_Sans] text-2xl font-semibold text-[#1a1a1a]">{project.name}</h1>
-          <Link
-            to={`/client/projects/${project.id}`}
-            className="shrink-0 rounded-full bg-[#FFCC00] px-4 py-1.5 font-[DM_Sans] text-xs font-semibold tracking-wide text-[#1a1a1a] uppercase transition-colors hover:bg-[#E3350D] hover:text-white"
-          >
-            Client view →
-          </Link>
+          <div className="flex shrink-0 gap-2">
+            <Link
+              to={`/projects/${project.id}/ar`}
+              onClick={guardNavigation}
+              className="rounded-full border-2 border-[#1a1a1a] px-4 py-1.5 font-[DM_Sans] text-xs font-semibold tracking-wide text-[#1a1a1a] uppercase transition-colors hover:bg-[#1a1a1a] hover:text-white"
+            >
+              View in AR
+            </Link>
+            <Link
+              to={`/client/projects/${project.id}`}
+              onClick={guardNavigation}
+              className="rounded-full bg-[#FFCC00] px-4 py-1.5 font-[DM_Sans] text-xs font-semibold tracking-wide text-[#1a1a1a] uppercase transition-colors hover:bg-[#E3350D] hover:text-white"
+            >
+              Client view →
+            </Link>
+          </div>
         </div>
         <Inspector store={store} selection={activeSelection} />
         <ProjectSummary project={project} materials={materials} />

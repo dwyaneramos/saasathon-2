@@ -9,6 +9,18 @@ export default defineConfig({
   // Both prefixes are intentionally browser-safe public Supabase settings.
   envPrefix: ['VITE_', 'NEXT_PUBLIC_'],
   server: {
+    // Lets a tunnel (localtunnel/ngrok/etc.) reach the dev server for on-device WebXR
+    // testing - Vite otherwise rejects requests whose Host header it doesn't recognize.
+    allowedHosts: true,
+    proxy: {
+      '/api': {
+        target: 'http://localhost:5050',
+        changeOrigin: true,
+      },
+    },
+  },
+  preview: {
+    allowedHosts: true,
     proxy: {
       '/api': {
         target: 'http://localhost:5050',

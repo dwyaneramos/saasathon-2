@@ -1,4 +1,5 @@
 import { Link, Route, Routes } from 'react-router-dom'
+import ARProjectPage from './pages/ARProjectPage'
 import AccountMenu from './components/AccountMenu'
 import RequireAuth from './components/RequireAuth'
 import AuthPage from './pages/AuthPage'
@@ -42,6 +43,7 @@ function App() {
         <Route path="/projects/:id" element={<RequireAuth><ProjectOverviewPage /></RequireAuth>} />
         <Route path="/documents/:id" element={<RequireAuth><DocumentPage /></RequireAuth>} />
         <Route path="/client/projects/:id" element={<RequireAuth><ClientProjectPage /></RequireAuth>} />
+        <Route path="/projects/:id/ar" element={<RequireAuth><ARProjectPage /></RequireAuth>} />
       </Routes>
     </div>
   )

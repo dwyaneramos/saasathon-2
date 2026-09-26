@@ -1,6 +1,6 @@
 import { get, set } from 'idb-keyval'
 import { useCallback, useEffect, useMemo, useReducer, useRef } from 'react'
-import type { Drawing, DrawingBackground, PlacedComponent, Wire } from '../types/drawing'
+import type { ComponentKind, Drawing, DrawingBackground, PlacedComponent, Wire } from '../types/drawing'
 
 const HISTORY_LIMIT = 100
 const SAVE_DEBOUNCE_MS = 400
@@ -8,6 +8,25 @@ const SAVE_DEBOUNCE_MS = 400
 const storageKey = (projectId: string) => `drawing:${projectId}`
 
 export const newId = () => crypto.randomUUID()
+
+// Shared between manual placement and auto-detected components so both number
+// consistently (PO1, SW1, L1, ...).
+export const LABEL_PREFIX: Record<ComponentKind, string> = {
+  socket: 'PO',
+  'double-socket': 'PO',
+  switch: 'SW',
+  'two-way-switch': 'SW',
+  light: 'L',
+  downlight: 'DL',
+  switchboard: 'DB',
+  'junction-box': 'JB',
+}
+
+export function nextComponentLabel(existing: readonly PlacedComponent[], kind: ComponentKind): string {
+  const prefix = LABEL_PREFIX[kind]
+  const count = existing.filter((c) => LABEL_PREFIX[c.kind] === prefix).length
+  return `${prefix}${count + 1}`
+}
 
 function emptyDrawing(projectId: string): Drawing {
   return { projectId, components: [], wires: [], updatedAt: Date.now() }
@@ -88,15 +107,28 @@ export function useDrawing(projectId: string) {
   }, [projectId])
 
   const saveTimer = useRef<number | undefined>(undefined)
+  const pendingSaveRef = useRef<(() => void) | null>(null)
   useEffect(() => {
     if (!state.loaded || state.present.projectId !== projectId) return
     window.clearTimeout(saveTimer.current)
     const drawing = state.present
-    saveTimer.current = window.setTimeout(() => {
+    const flush = () => {
+      pendingSaveRef.current = null
       set(storageKey(projectId), drawing).catch((err) => console.error('Failed to save drawing', err))
-    }, SAVE_DEBOUNCE_MS)
-    return () => window.clearTimeout(saveTimer.current)
+    }
+    pendingSaveRef.current = flush
+    saveTimer.current = window.setTimeout(flush, SAVE_DEBOUNCE_MS)
   }, [state.present, state.loaded, projectId])
+
+  // Flush any save still debouncing when this hook unmounts - otherwise a change made
+  // just before navigating away (e.g. calibrating scale, then jumping straight to AR)
+  // gets silently dropped instead of written.
+  useEffect(() => {
+    return () => {
+      window.clearTimeout(saveTimer.current)
+      pendingSaveRef.current?.()
+    }
+  }, [])
 
   const change = useCallback(
     (update: (d: Drawing) => Drawing, record = true) => dispatch({ type: 'change', update, record }),
