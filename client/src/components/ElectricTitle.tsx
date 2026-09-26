@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import type { ReactNode } from 'react'
+import type { ReactNode, RefObject } from 'react'
 import './ElectricTitle.css'
 
 const MIN_STRIKE_DELAY = 2200
@@ -12,6 +12,13 @@ type Point = [number, number]
 interface Bolt {
   main: Point[]
   branches: Point[][]
+}
+
+interface AvoidRect {
+  left: number
+  top: number
+  right: number
+  bottom: number
 }
 
 /** Recursive midpoint displacement — the standard fractal-lightning technique: rough up a straight segment every call, like a real arc never striking the same way twice. */
@@ -32,25 +39,39 @@ function midpointDisplace(
   return [...left.slice(0, -1), ...right]
 }
 
-/** A bottom-left-to-top-right trunk, fractally roughed up, with a couple of forking branches. */
-function generateBolt(width: number, height: number): Bolt {
+/**
+ * A bottom-left-to-top-right trunk, fractally roughed up, with a couple of forking branches.
+ * Stays low and flat past the avoid box (the hero text/button) before climbing to the top-right corner,
+ * so the strike never crosses the content it's rendered behind.
+ */
+function generateBolt(width: number, height: number, avoid: AvoidRect): Bolt {
+  const marginX = 56
+  const marginY = 56
+  const clearX = Math.min(width * 0.92, Math.max(width * 0.3, avoid.right + marginX))
+  const clearY = Math.min(height * 0.95, avoid.bottom + marginY)
+
   const anchors: Point[] = [
-    [0, height * 0.92],
-    [width * 0.5, height * 0.55],
-    [width, height * 0.08],
+    [0, clearY],
+    [clearX, clearY],
+    [width, height * 0.06],
   ]
   let main: Point[] = []
+  let climbStart = 0
   for (let i = 0; i < anchors.length - 1; i += 1) {
     const [x0, y0] = anchors[i]
     const [x1, y1] = anchors[i + 1]
-    const seg = midpointDisplace(x0, y0, x1, y1, height * 0.22, 0.62, 16)
+    // Segment 0 (under the content) stays nearly flat; segment 1 (clear of it) gets the full fractal roughness.
+    const displace = i === 0 ? 16 : height * 0.22
+    const seg = midpointDisplace(x0, y0, x1, y1, displace, 0.62, 16)
     main = main.length ? [...main.slice(0, -1), ...seg] : seg
+    if (i === 0) climbStart = main.length
   }
 
   const branchCount = 2 + Math.round(Math.random())
   const branches: Point[][] = []
   for (let b = 0; b < branchCount; b += 1) {
-    const originIndex = Math.floor(main.length * (0.2 + Math.random() * 0.6))
+    // Only fork off the climbing segment, which is already clear of the avoid box on the x-axis.
+    const originIndex = climbStart + Math.floor((main.length - climbStart) * Math.random())
     const [ox, oy] = main[originIndex]
     const dir = Math.random() > 0.5 ? 1 : -1
     const branchLen = width * (0.08 + Math.random() * 0.1)
@@ -112,9 +133,11 @@ function buildPath(pointLists: Point[][]): Path2D {
 interface ElectricTitleProps {
   children: ReactNode
   className?: string
+  /** Bounding box to keep the bolt clear of (e.g. the whole hero block, title+subtitle+button). Defaults to the title itself. */
+  avoidRef?: RefObject<HTMLElement | null>
 }
 
-export default function ElectricTitle({ children, className }: ElectricTitleProps) {
+export default function ElectricTitle({ children, className, avoidRef }: ElectricTitleProps) {
   const containerRef = useRef<HTMLDivElement>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const [zapping, setZapping] = useState(false)
@@ -135,22 +158,23 @@ export default function ElectricTitle({ children, className }: ElectricTitleProp
     let cancelled = false
     const timers: number[] = []
 
+    const getAvoidRect = (): AvoidRect => (avoidRef?.current ?? container).getBoundingClientRect()
+
     const resize = () => {
       cssWidth = window.innerWidth
-      const rect = container.getBoundingClientRect()
-      cssHeight = Math.max(rect.height * 2.2, 200)
+      cssHeight = window.innerHeight
       const dpr = Math.min(window.devicePixelRatio || 1, 2)
       canvas.width = cssWidth * dpr
       canvas.height = cssHeight * dpr
       canvas.style.width = `${cssWidth}px`
       canvas.style.height = `${cssHeight}px`
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
-      bolt = generateBolt(cssWidth, cssHeight)
+      bolt = generateBolt(cssWidth, cssHeight, getAvoidRect())
     }
 
     const restrike = () => {
       if (cancelled) return
-      bolt = generateBolt(cssWidth, cssHeight)
+      bolt = generateBolt(cssWidth, cssHeight, getAvoidRect())
       strikeStart = performance.now()
       setZapping(true)
       timers.push(window.setTimeout(() => !cancelled && setZapping(false), 240))
@@ -202,6 +226,7 @@ export default function ElectricTitle({ children, className }: ElectricTitleProp
     timers.push(window.setTimeout(restrike, 1200))
     const observer = new ResizeObserver(resize)
     observer.observe(container)
+    if (avoidRef?.current) observer.observe(avoidRef.current)
     window.addEventListener('resize', resize)
     raf = requestAnimationFrame(draw)
 
@@ -212,7 +237,7 @@ export default function ElectricTitle({ children, className }: ElectricTitleProp
       window.removeEventListener('resize', resize)
       timers.forEach((id) => window.clearTimeout(id))
     }
-  }, [])
+  }, [avoidRef])
 
   return (
     <div ref={containerRef} className="relative inline-block">
