@@ -116,7 +116,15 @@ function ProjectWorkspace({ project }: { project: Project }) {
         <Link to="/projects" className={backLinkClass}>
           ← My Projects
         </Link>
-        <h1 className="font-[DM_Sans] text-2xl font-semibold text-[#1a1a1a]">{project.name}</h1>
+        <div className="flex items-center justify-between gap-4">
+          <h1 className="font-[DM_Sans] text-2xl font-semibold text-[#1a1a1a]">{project.name}</h1>
+          <Link
+            to={`/client/projects/${project.id}`}
+            className="shrink-0 rounded-full bg-[#FFCC00] px-4 py-1.5 font-[DM_Sans] text-xs font-semibold tracking-wide text-[#1a1a1a] uppercase transition-colors hover:bg-[#E3350D] hover:text-white"
+          >
+            Client view →
+          </Link>
+        </div>
         <Inspector store={store} selection={activeSelection} />
         <ProjectSummary project={project} materials={materials} />
       </aside>
@@ -139,54 +147,7 @@ function ProjectOverviewPage() {
     )
   }
 
-  const tiles: InfoTile[] = [
-    { label: 'Status', value: project.status },
-    { label: 'Owner', value: project.owner },
-    { label: 'Priority', value: project.priority },
-    { label: 'Start Date', value: project.startDate },
-    { label: 'Due Date', value: project.dueDate },
-    { label: 'Progress', value: project.progress },
-  ]
-
-  return (
-    <div className="mx-auto flex min-h-svh max-w-5xl flex-col gap-6 px-8 py-10">
-      <Link
-        to="/projects"
-        className="self-start font-[DM_Sans] text-xs uppercase tracking-wide text-black/50 hover:text-black"
-      >
-        ← My Projects
-      </Link>
-      <ProjectWorkspace key={project.id} project={project} />
-      <h1 className="font-[DM_Sans] text-2xl font-semibold text-[#1a1a1a]">{project.name}</h1>
-
-      <div className="flex gap-6">
-        <div className="grid flex-1 grid-cols-3 gap-6">
-          {tiles.map((tile) => (
-            <div
-              key={tile.label}
-              className="flex h-40 flex-col justify-center gap-2 rounded-lg border border-black/10 bg-black/[0.03] p-5"
-            >
-              <span className="font-[DM_Sans] text-xs uppercase tracking-wide text-black/50">
-                {tile.label}
-              </span>
-              <span className="font-[DM_Sans] text-lg font-semibold text-[#1a1a1a]">
-                {tile.value}
-              </span>
-            </div>
-          ))}
-        </div>
-
-        <div className="w-80 shrink-0 rounded-lg border border-black/10 bg-black/[0.03] p-6">
-          <span className="font-[DM_Sans] text-xs uppercase tracking-wide text-black/50">
-            Description
-          </span>
-          <p className="mt-3 font-[DM_Sans] text-sm leading-relaxed text-[#1a1a1a]">
-            {project.description}
-          </p>
-        </div>
-      </div>
-    </div>
-  )
+  return <ProjectWorkspace key={project.id} project={project} />
 }
 
 export default ProjectOverviewPage

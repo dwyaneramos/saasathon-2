@@ -18,7 +18,10 @@ function ProjectSummary({ project, materials }: ProjectSummaryProps) {
 
   return (
     <div className="flex flex-1 flex-col gap-4 rounded-lg border border-black/10 bg-black/[0.03] p-5 font-[DM_Sans]">
-      <span className="text-xs uppercase tracking-wide text-black/50">Project overview</span>
+      <div>
+        <span className="text-xs uppercase tracking-wide text-black/50">Project overview · {project.type}</span>
+        <p className="mt-1 text-sm text-[#1a1a1a]">{project.address}</p>
+      </div>
 
       <div>
         <span className="text-xs uppercase tracking-wide text-black/50">Estimated materials cost</span>

@@ -26,8 +26,8 @@ export const MY_PROJECTS: Project[] = [
     progress: '62%',
     description:
       'Full kitchen rewire for a 1970s weatherboard house. New circuits for the oven and induction hob, extra double outlets along the bench, and LED downlights to replace the old fluoro.',
-    type: 'Commercial',
-    address: '120 Market St, San Francisco, CA 94105',
+    type: 'Residential',
+    address: '12 Rimu St, Ponsonby, Auckland 1011',
   },
   {
     id: 'p2',
@@ -40,8 +40,8 @@ export const MY_PROJECTS: Project[] = [
     progress: '38%',
     description:
       'Commercial fit-out for an open-plan office. New sub-board, floor boxes for the desk pods, meeting-room lighting on two-way switching, and data cabling coordination with the IT contractor.',
-    type: 'Residential',
-    address: '48 Elm Grove, Austin, TX 78704',
+    type: 'Commercial',
+    address: 'Level 3, 55 Victoria St, Wellington 6011',
   },
   {
     id: 'p3',
@@ -54,8 +54,8 @@ export const MY_PROJECTS: Project[] = [
     progress: '81%',
     description:
       'Detached garage conversion into a workshop. New sub-board fed from the house, 3-phase outlet for a welder, and bench power along two walls.',
-    type: 'Commercial',
-    address: '900 W Madison St, Chicago, IL 60607',
+    type: 'Residential',
+    address: '7 Totara Ln, Riccarton, Christchurch 8011',
   },
 ]
 
@@ -72,7 +72,7 @@ export const SHARED_PROJECTS: Project[] = [
     description:
       'Shared with the main contractor. Four-unit townhouse development, engineer-designed lighting and power layout, waiting on revised drawings for Unit 3.',
     type: 'Residential',
-    address: '15 Harbor View Rd, Seattle, WA 98121',
+    address: '1–4/210 Great South Rd, Epsom, Auckland 1051',
   },
 ]
 
