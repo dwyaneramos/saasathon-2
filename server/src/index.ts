@@ -5,6 +5,7 @@ import 'dotenv/config';
 // error middleware below instead of becoming an unhandled rejection that kills the
 // process - Express 4 has no built-in support for async handlers.
 import 'express-async-errors';
+import cableScheduleRouter from './routes/cable-schedule.js';
 import drawingDetectRouter from './routes/drawingDetect.js';
 import helloRouter from './routes/hello.js';
 import pipelineRouter from './routes/pipeline.js';
@@ -23,6 +24,7 @@ app.use('/api/pipeline', pipelineRouter);
 app.use('/api/drawing', drawingDetectRouter);
 app.use('/api/projects', projectDocumentsRouter);
 app.use('/api/projects', wiringPlanRouter);
+app.use('/api/projects', cableScheduleRouter);
 
 app.get('/api/health', (_req, res) => {
   res.json({ status: 'ok' });

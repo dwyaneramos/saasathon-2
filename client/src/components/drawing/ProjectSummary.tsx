@@ -1,15 +1,16 @@
 import type { Project } from '../../lib/projects'
 import type { MaterialsSummary } from '../../lib/materials'
-import CableSchedule from './CableSchedule'
 
 interface ProjectSummaryProps {
   project: Project
   materials: MaterialsSummary
+  /** Cables on the editable schedule further down the page. */
+  cableCount: number
 }
 
 const nzd = new Intl.NumberFormat('en-NZ', { style: 'currency', currency: 'NZD' })
 
-function ProjectSummary({ project, materials }: ProjectSummaryProps) {
+function ProjectSummary({ project, materials, cableCount }: ProjectSummaryProps) {
   const stats = [
     { label: 'Status', value: project.status },
     { label: 'Due', value: project.dueDate },
@@ -76,7 +77,12 @@ function ProjectSummary({ project, materials }: ProjectSummaryProps) {
           </table>
         )}
 
-        <CableSchedule projectId={project.id} />
+        <p className="mt-4 text-xs text-black/60">
+          Cable schedule: {cableCount} cable{cableCount === 1 ? '' : 's'} ·{' '}
+          <a href="#cable-schedule" className="font-semibold text-[#1a1a1a] underline-offset-2 hover:underline">
+            View and edit ↓
+          </a>
+        </p>
       </div>
 
       <p className="text-[10px] text-black/40">Prices are indicative demo figures, not supplier quotes.</p>

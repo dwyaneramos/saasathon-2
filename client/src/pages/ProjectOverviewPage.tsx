@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState, type MouseEvent } from 'reac
 import { Link, useParams, useSearchParams } from 'react-router-dom'
 import DrawingCanvas from '../components/drawing/DrawingCanvas'
 import Inspector from '../components/drawing/Inspector'
+import CableScheduleEditor from '../components/cableSchedule/CableScheduleEditor'
 import ProjectSummary from '../components/drawing/ProjectSummary'
 import Toolbar from '../components/drawing/Toolbar'
 import UploadDropzone from '../components/drawing/UploadDropzone'
@@ -9,6 +10,7 @@ import ComplianceBreaches from '../components/pipeline/ComplianceBreaches'
 import DocumentsPanel from '../components/documents/DocumentsPanel'
 import ProjectDocumentsTab from '../components/ProjectDocumentsTab'
 import { DEFAULT_WIRE } from '../data/catalogue'
+import { rowsToComplianceDocument, useCableScheduleRows } from '../lib/cableSchedule'
 import { getProjectById, type Project } from '../lib/projects'
 import { detectDrawing } from '../lib/detectDrawing'
 import { newId, nextComponentLabel, useDrawing } from '../lib/drawingStore'
@@ -172,9 +174,13 @@ function ProjectWorkspace({ project }: { project: Project }) {
 
   // Bumped after each document upload so compliance re-checks the new extractions.
   const [documentsVersion, setDocumentsVersion] = useState(0)
-  // Quick Pipeline results live only in the browser, so they're sent along with the check.
-  const [quickDocs, setQuickDocs] = useState<unknown[]>([])
-  const compliance = useCompliance(drawing, project.id, documentsVersion, quickDocs)
+  const cableSchedule = useCableScheduleRows(project.id)
+  // The edited cable schedule is checked alongside the uploaded documents and the drawing.
+  const scheduleDocuments = useMemo(
+    () => (cableSchedule.rows.length > 0 ? [rowsToComplianceDocument(cableSchedule.rows)] : []),
+    [cableSchedule.rows],
+  )
+  const compliance = useCompliance(drawing, project.id, documentsVersion, scheduleDocuments)
 
   async function replaceFile(file: File) {
     try {
@@ -211,7 +217,10 @@ function ProjectWorkspace({ project }: { project: Project }) {
             tab === 'analyse' ? '' : 'hidden'
           }`}
         >
-          <ProjectDocumentsTab projectId={project.id} />
+          <ProjectDocumentsTab
+              projectId={project.id}
+              onDocumentsChanged={() => setDocumentsVersion((v) => v + 1)}
+            />
         </div>
 
           <div
@@ -307,13 +316,17 @@ function ProjectWorkspace({ project }: { project: Project }) {
           </div>
           </div>
           <Inspector store={store} selection={activeSelection} />
-          <ProjectSummary project={project} materials={materials} />
+          <ProjectSummary project={project} materials={materials} cableCount={cableSchedule.rows.length} />
         </aside>
       </div>
 
       {/* Right padding = sidebar (w-96) + gap + page padding, so this lines up with the drawing column. */}
       <div className="px-6 lg:pr-[calc(24rem+3rem)]">
         <ComplianceBreaches state={compliance.state} onAskAi={compliance.askAi} />
+      </div>
+
+      <div id="cable-schedule" className="scroll-mt-24 px-6">
+        <CableScheduleEditor projectId={project.id} {...cableSchedule} />
       </div>
     </div>
   )
