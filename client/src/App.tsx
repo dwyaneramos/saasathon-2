@@ -4,22 +4,27 @@ import ProjectOverviewPage from './pages/ProjectOverviewPage'
 import ProjectsPage from './pages/ProjectsPage'
 
 const navLinkClass =
-  'relative text-white/75 transition-colors hover:text-white after:absolute after:inset-x-0 after:-bottom-1 after:h-px after:origin-left after:scale-x-0 after:bg-current after:transition-transform after:duration-300 hover:after:scale-x-100'
+  'relative text-[#1a1a1a]/60 transition-colors hover:text-[#1a1a1a] after:absolute after:inset-x-0 after:-bottom-1 after:h-px after:origin-left after:scale-x-0 after:bg-[#E3350D] after:transition-transform after:duration-300 hover:after:scale-x-100'
 
 function App() {
   return (
     <div className="relative min-h-svh">
-      <nav className="absolute top-10 left-1/2 z-10 flex -translate-x-1/2 items-center gap-12 font-[IBM_Plex_Sans] text-sm">
-        <span className="font-[IBM_Plex_Mono] text-base font-semibold tracking-widest uppercase">
-          Elekto
+      <nav className="fixed top-6 left-1/2 z-20 flex -translate-x-1/2 items-center gap-6 rounded-full border-2 border-[#1a1a1a] bg-white/95 px-6 py-2.5 shadow-[0_4px_0_0_rgba(26,26,26,0.15)] backdrop-blur-sm sm:gap-10 sm:px-8">
+        <span className="font-[DM_Sans] text-base font-bold tracking-wide text-[#1a1a1a] uppercase">
+          Pika
         </span>
-        <a href="#" className={navLinkClass}>
-          Features
-        </a>
-        <a href="#" className={navLinkClass}>
-          Pricing
-        </a>
-        <a href="#" className={`${navLinkClass} font-semibold text-[rgb(190,220,255)]`}>
+        <div className="hidden items-center gap-8 font-[DM_Sans] text-sm sm:flex">
+          <a href="#" className={navLinkClass}>
+            Features
+          </a>
+          <a href="#" className={navLinkClass}>
+            Pricing
+          </a>
+        </div>
+        <a
+          href="#"
+          className="rounded-full bg-[#FFCC00] px-4 py-1.5 font-[DM_Sans] text-xs font-semibold tracking-wide text-[#1a1a1a] uppercase transition-colors hover:bg-[#E3350D] hover:text-white"
+        >
           Login
         </a>
       </nav>
