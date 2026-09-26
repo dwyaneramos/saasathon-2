@@ -4,7 +4,7 @@
 -- visible rather than silently overwritten.
 
 alter table public.documents add column if not exists sheet_type text;
-alter table public.dococuments add column if not exists size_bytes bigint;
+alter table public.documents add column if not exists size_bytes bigint;
 
 -- Widen the status check to include the pre-processing 'intake' state. The constraint is
 -- named here so the drop is explicit rather than relying on the generated name.
