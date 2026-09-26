@@ -159,3 +159,30 @@ export const ExtractionDocument = z.object({
   needs_review: z.array(NeedsReviewEntry),
 });
 export type ExtractionDocument = z.infer<typeof ExtractionDocument>;
+
+// ---- Wiring materials plan (aggregation over one project's extracted documents) ----
+
+export const PlanConfidence = z.enum(['low', 'medium', 'high']);
+export type PlanConfidence = z.infer<typeof PlanConfidence>;
+
+export const PlanSource = z.object({
+  doc_id: z.string(),
+  item_ref: z
+    .string()
+    .describe('Path-like reference into the source ExtractionDocument, e.g. "cable_schedule_rows[2].cable_type".'),
+});
+
+export const WiringPlanItem = z.object({
+  description: z.string(),
+  quantity: z.string().nullable().describe('As stated in a source document, e.g. "40m" - null when no source states a quantity.'),
+  confidence: PlanConfidence,
+  reason: z.string().describe('Why this confidence, citing agreement/conflict/completeness across sources.'),
+  needs_info: z.string().nullable().describe('What is missing or conflicting; null only when confidence is high.'),
+  sources: z.array(PlanSource),
+});
+export type WiringPlanItem = z.infer<typeof WiringPlanItem>;
+
+export const WiringPlan = z.object({
+  items: z.array(WiringPlanItem),
+});
+export type WiringPlan = z.infer<typeof WiringPlan>;

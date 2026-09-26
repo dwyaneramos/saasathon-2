@@ -1,0 +1,27 @@
+{
+  "doc_id": "missing-1",
+  "source_file": "partial-cable-schedule.csv",
+  "doc_type": "cable_schedule",
+  "pages_total": 1,
+  "site_info": null,
+  "legend_items": [],
+  "circuits": [],
+  "switchboards": [],
+  "single_line_elements": [],
+  "compliance_records": [],
+  "financial_line_items": [],
+  "cable_schedule_rows": [
+    {
+      "trace": { "doc_id": "missing-1", "page": 1, "bbox": null, "method": "text-llm", "confidence": 0.9 },
+      "cable_id": { "value": "C9", "provenance": "extracted", "rule": null, "confidence": 0.9 },
+      "from_ref": { "value": "SB1", "provenance": "extracted", "rule": null, "confidence": 0.9 },
+      "to_ref": { "value": "DB-LAUNDRY", "provenance": "extracted", "rule": null, "confidence": 0.9 },
+      "cable_type": { "value": "TPS 2.5mm2", "provenance": "extracted", "rule": null, "confidence": 0.9 },
+      "length_m": { "value": null, "provenance": "assumed", "rule": "not stated on source document", "confidence": 0.2 },
+      "notes": { "value": "length illegible on scan", "provenance": "extracted", "rule": null, "confidence": 0.5 }
+    }
+  ],
+  "needs_review": [
+    { "item_ref": "cable_schedule_rows[0].length_m", "reason": "length illegible on scan" }
+  ]
+}

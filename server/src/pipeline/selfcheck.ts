@@ -5,6 +5,7 @@ import path from 'node:path';
 import { ingest } from './ingest.js';
 import { redactText } from './redact.js';
 import type { ExtractionDocument, Provenance } from './schema.js';
+import { WiringPlan } from './schema.js';
 import { validateExtraction } from './validate.js';
 
 function testRedact(): void {
@@ -112,10 +113,34 @@ function testValidateFlagsEmptyExtraction(): void {
   );
 }
 
+function testWiringPlanSchemaValidatesConfidence(): void {
+  const valid = WiringPlan.safeParse({
+    items: [
+      {
+        description: 'TPS 2.5mm2, DB1 -> Kitchen',
+        quantity: '18m',
+        confidence: 'high',
+        reason: 'Single cable schedule row, confidence 0.95, no conflicts.',
+        needs_info: null,
+        sources: [{ doc_id: 'd1', item_ref: 'cable_schedule_rows[0]' }],
+      },
+    ],
+  });
+  assert.ok(valid.success, 'a well-formed wiring plan item should validate');
+
+  const invalid = WiringPlan.safeParse({
+    items: [
+      { description: 'x', quantity: null, confidence: 'certain', reason: 'x', needs_info: null, sources: [] },
+    ],
+  });
+  assert.ok(!invalid.success, 'an invalid confidence value should fail validation');
+}
+
 testRedact();
 testIngestTypeDetection();
 testValidateFlagsLowConfidenceAndMissingRule();
 testValidateFlagsDuplicateCircuitIds();
 testValidateFlagsEmptyExtraction();
+testWiringPlanSchemaValidatesConfidence();
 
 console.log('pipeline selfcheck: all assertions passed');
