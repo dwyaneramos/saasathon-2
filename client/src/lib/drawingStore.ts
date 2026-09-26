@@ -1,5 +1,6 @@
 import { get, set } from 'idb-keyval'
 import { useCallback, useEffect, useMemo, useReducer, useRef } from 'react'
+import { supabase } from './supabase'
 import type { ComponentKind, Drawing, DrawingBackground, PlacedComponent, Wire } from '../types/drawing'
 
 const HISTORY_LIMIT = 100
@@ -94,13 +95,18 @@ export function useDrawing(projectId: string) {
 
   useEffect(() => {
     let cancelled = false
-    get<Drawing>(storageKey(projectId))
-      .then((stored) => {
-        if (!cancelled) dispatch({ type: 'load', drawing: stored ?? emptyDrawing(projectId) })
-      })
-      .catch(() => {
-        if (!cancelled) dispatch({ type: 'load', drawing: emptyDrawing(projectId) })
-      })
+    async function load() {
+      const cached = await get<Drawing>(storageKey(projectId)).catch(() => undefined)
+      const { data, error } = await supabase
+        .from('project_drawings')
+        .select('drawing')
+        .eq('project_id', projectId)
+        .maybeSingle()
+
+      if (error) console.error('Failed to load drawing', error)
+      if (!cancelled) dispatch({ type: 'load', drawing: (data?.drawing as Drawing | undefined) ?? cached ?? emptyDrawing(projectId) })
+    }
+    void load()
     return () => {
       cancelled = true
     }
@@ -115,6 +121,12 @@ export function useDrawing(projectId: string) {
     const flush = () => {
       pendingSaveRef.current = null
       set(storageKey(projectId), drawing).catch((err) => console.error('Failed to save drawing', err))
+      supabase
+        .from('project_drawings')
+        .upsert({ project_id: projectId, drawing, updated_at: new Date().toISOString() })
+        .then(({ error }) => {
+          if (error) console.error('Failed to save drawing', error)
+        })
     }
     pendingSaveRef.current = flush
     saveTimer.current = window.setTimeout(flush, SAVE_DEBOUNCE_MS)
