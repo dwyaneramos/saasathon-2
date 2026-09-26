@@ -3,7 +3,6 @@ import ClientProjectPage from './pages/ClientProjectPage'
 import FeaturesPage from './pages/FeaturesPage'
 import LandingPage from './pages/LandingPage'
 import NewProjectPage from './pages/NewProjectPage'
-import PipelineTestPage from './pages/PipelineTestPage'
 import PricingPage from './pages/PricingPage'
 import ProjectOverviewPage from './pages/ProjectOverviewPage'
 import ProjectsPage from './pages/ProjectsPage'
@@ -25,9 +24,6 @@ function App() {
           <Link to="/pricing" className={navLinkClass}>
             Pricing
           </Link>
-          <Link to="/pipeline" className={navLinkClass}>
-            Pipeline
-          </Link>
         </div>
         <a
           href="#"
@@ -44,7 +40,6 @@ function App() {
         <Route path="/projects/new" element={<NewProjectPage />} />
         <Route path="/projects/:id" element={<ProjectOverviewPage />} />
         <Route path="/client/projects/:id" element={<ClientProjectPage />} />
-        <Route path="/pipeline" element={<PipelineTestPage />} />
       </Routes>
     </div>
   )
