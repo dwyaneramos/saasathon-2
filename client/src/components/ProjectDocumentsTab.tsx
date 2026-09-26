@@ -12,6 +12,7 @@ interface DocumentRow {
   needs_review_count: number
   created_at: string
   extraction: unknown | null
+  error: string | null
 }
 
 const STATUS_STYLE: Record<DocumentRow['status'], string> = {
@@ -108,6 +109,7 @@ function ProjectDocumentsTab({ projectId }: ProjectDocumentsTabProps) {
               needs_review_count: r.needsReviewCount,
               created_at: new Date().toISOString(),
               extraction: r.extraction,
+              error: r.error,
             }),
             outputFile: null,
             needsReviewCount: r.needsReviewCount,
@@ -188,6 +190,9 @@ function ProjectDocumentsTab({ projectId }: ProjectDocumentsTabProps) {
                   {doc.needs_review_count > 0 && ` (${doc.needs_review_count} needs review)`}
                 </span>
               </div>
+              {doc.status === 'error' && doc.error && (
+                <p className="mt-2 font-[DM_Sans] text-xs text-[#E3350D]">{doc.error}</p>
+              )}
               {doc.extraction != null && (
                 <details className="mt-3">
                   <summary className="cursor-pointer font-[DM_Sans] text-xs uppercase tracking-wide text-black/50">
