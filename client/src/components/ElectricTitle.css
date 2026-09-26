@@ -52,6 +52,27 @@
   }
 }
 
+/* The wordmark's bolt flashes yellow while the letters flash red. */
+.electric-title.is-zapping .electric-bolt {
+  animation: bolt-flash 260ms steps(2, jump-none);
+}
+
+@keyframes bolt-flash {
+  0%,
+  30%,
+  60%,
+  100% {
+    fill: #e3350d;
+    filter: none;
+  }
+  15%,
+  45%,
+  75% {
+    fill: #ffcc00;
+    filter: drop-shadow(0 0 14px rgba(255, 204, 0, 0.95)) drop-shadow(0 0 32px rgba(227, 53, 13, 0.5));
+  }
+}
+
 .electric-lightning-canvas {
   position: fixed;
   top: 0;
