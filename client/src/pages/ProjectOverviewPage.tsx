@@ -42,7 +42,15 @@ function ProjectOverviewPage() {
         ← My Projects
       </Link>
 
-      <h1 className="font-[DM_Sans] text-2xl font-semibold text-[#1a1a1a]">{project.name}</h1>
+      <div className="flex items-center justify-between gap-4">
+        <h1 className="font-[DM_Sans] text-2xl font-semibold text-[#1a1a1a]">{project.name}</h1>
+        <Link
+          to={`/client/projects/${project.id}`}
+          className="rounded-full bg-[#FFCC00] px-4 py-1.5 font-[DM_Sans] text-xs font-semibold tracking-wide text-[#1a1a1a] uppercase transition-colors hover:bg-[#E3350D] hover:text-white"
+        >
+          Client view →
+        </Link>
+      </div>
 
       <div className="flex gap-6">
         <div className="grid flex-1 grid-cols-3 gap-6">
