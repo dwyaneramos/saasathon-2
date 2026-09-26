@@ -9,9 +9,11 @@
     "build": "tsc",
     "start": "node dist/index.js",
     "pipeline": "tsx src/pipeline/cli.ts",
-    "pipeline:selfcheck": "tsx src/pipeline/selfcheck.ts"
+    "pipeline:selfcheck": "tsx src/pipeline/selfcheck.ts",
+    "plan:selfcheck": "tsx src/pipeline/plan.selfcheck.ts"
   },
   "dependencies": {
+    "@supabase/supabase-js": "^2.117.2",
     "cors": "^2.8.5",
     "dotenv": "^16.4.5",
     "express": "^4.19.2",

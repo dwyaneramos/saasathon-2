@@ -1,0 +1,26 @@
+{
+  "doc_id": "priced-quote-1",
+  "source_file": "priced-quote.txt",
+  "doc_type": "quote",
+  "pages_total": 1,
+  "site_info": null,
+  "legend_items": [],
+  "circuits": [],
+  "switchboards": [],
+  "single_line_elements": [],
+  "compliance_records": [],
+  "financial_line_items": [
+    {
+      "trace": { "doc_id": "priced-quote-1", "page": 1, "bbox": null, "method": "text-llm", "confidence": 0.95 },
+      "source_doc_type": { "value": "quote", "provenance": "extracted", "rule": null, "confidence": 0.95 },
+      "line_no": { "value": 1, "provenance": "extracted", "rule": null, "confidence": 0.95 },
+      "description": { "value": "TPS 2.5mm2 cable run, SB1 to DB-KITCHEN, 18m", "provenance": "extracted", "rule": null, "confidence": 0.95 },
+      "quantity": { "value": 18, "provenance": "extracted", "rule": null, "confidence": 0.95 },
+      "unit": { "value": "m", "provenance": "extracted", "rule": null, "confidence": 0.95 },
+      "unit_price": { "value": 12.5, "provenance": "extracted", "rule": null, "confidence": 0.95 },
+      "line_total": { "value": 225, "provenance": "extracted", "rule": null, "confidence": 0.95 }
+    }
+  ],
+  "cable_schedule_rows": [],
+  "needs_review": []
+}

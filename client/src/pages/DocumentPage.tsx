@@ -1,7 +1,8 @@
+import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import DocumentThumbnail from '../components/DocumentThumbnail'
 import { STATUS_LABEL, STATUS_STYLE } from '../data/documents'
-import { getProjectById } from '../data/projects'
+import { getProjectById, type Project } from '../lib/projects'
 import { useDocuments } from '../lib/documentStore'
 
 const labelClass = 'font-[DM_Sans] text-xs uppercase tracking-wide text-black/50'
@@ -11,6 +12,22 @@ function DocumentPage() {
   const { id } = useParams<{ id: string }>()
   const { documents, loaded } = useDocuments()
   const doc = id ? documents.find((document) => document.id === id) : undefined
+  const [project, setProject] = useState<Project | null>(null)
+
+  useEffect(() => {
+    if (!doc) return
+    let cancelled = false
+    getProjectById(doc.projectId)
+      .then((result) => {
+        if (!cancelled) setProject(result)
+      })
+      .catch(() => {
+        /* fall back to showing the raw project id below */
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [doc])
 
   if (!doc) {
     return (
@@ -25,7 +42,6 @@ function DocumentPage() {
     )
   }
 
-  const project = getProjectById(doc.projectId)
   const backLink = `/projects/${doc.projectId}?tab=documents`
 
   const details = [

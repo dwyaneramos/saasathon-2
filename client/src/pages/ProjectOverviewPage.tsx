@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link, useParams, useSearchParams } from 'react-router-dom'
 import DrawingCanvas from '../components/drawing/DrawingCanvas'
 import Inspector from '../components/drawing/Inspector'
@@ -7,18 +7,20 @@ import Toolbar from '../components/drawing/Toolbar'
 import UploadDropzone from '../components/drawing/UploadDropzone'
 import DocumentsPanel from '../components/documents/DocumentsPanel'
 import DocumentPipeline from '../components/pipeline/DocumentPipeline'
-import { getProjectById, type Project } from '../data/projects'
+import ProjectDocumentsTab from '../components/ProjectDocumentsTab'
+import { getProjectById, type Project } from '../lib/projects'
 import { useDrawing } from '../lib/drawingStore'
 import { loadDrawingFile } from '../lib/loadDrawingFile'
 import { computeMaterials } from '../lib/materials'
 import { fitView, zoomView, type View } from '../lib/view'
 import type { Selection, Tool } from '../types/drawing'
 
-type WorkspaceTab = 'drawing' | 'pipeline' | 'documents'
+type WorkspaceTab = 'drawing' | 'aiPipeline' | 'pipeline' | 'documents'
 
 const TABS: { id: WorkspaceTab; label: string }[] = [
   { id: 'drawing', label: 'Drawing' },
-  { id: 'pipeline', label: 'Pipeline' },
+  { id: 'aiPipeline', label: 'Document Pipeline' },
+  { id: 'pipeline', label: 'Quick Pipeline' },
   { id: 'documents', label: 'Documents' },
 ]
 
@@ -81,7 +83,7 @@ function ProjectWorkspace({ project }: { project: Project }) {
   return (
     <div className="flex min-h-svh flex-col gap-6 px-6 pt-24 pb-6 lg:h-svh lg:flex-row">
       <section className="flex min-h-[70svh] min-w-0 flex-1 flex-col gap-4 lg:min-h-0">
-        <div role="tablist" className="flex gap-1 self-start rounded-full border-2 border-[#1a1a1a] bg-white p-1">
+        <div role="tablist" className="flex flex-wrap gap-1 self-start rounded-full border-2 border-[#1a1a1a] bg-white p-1">
           {TABS.map((t) => (
             <button
               key={t.id}
@@ -99,6 +101,14 @@ function ProjectWorkspace({ project }: { project: Project }) {
         </div>
 
         {/* Kept mounted while hidden so pipeline results survive switching tabs. */}
+        <div
+          className={`min-h-0 flex-1 overflow-auto rounded-lg border border-black/10 bg-black/[0.03] p-6 ${
+            tab === 'aiPipeline' ? '' : 'hidden'
+          }`}
+        >
+          <ProjectDocumentsTab projectId={project.id} />
+        </div>
+
         <div
           className={`min-h-0 flex-1 overflow-hidden rounded-lg border border-black/10 bg-black/[0.03] ${
             tab === 'pipeline' ? '' : 'hidden'
@@ -188,7 +198,42 @@ function ProjectWorkspace({ project }: { project: Project }) {
 
 function ProjectOverviewPage() {
   const { id } = useParams<{ id: string }>()
-  const project = id ? getProjectById(id) : undefined
+  const [project, setProject] = useState<Project | null | undefined>(undefined)
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (!id) {
+      setProject(null)
+      return
+    }
+    let cancelled = false
+    getProjectById(id)
+      .then((result) => {
+        if (!cancelled) setProject(result)
+      })
+      .catch((err: unknown) => {
+        if (!cancelled) setError(err instanceof Error ? err.message : String(err))
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [id])
+
+  if (error) {
+    return (
+      <div className="mx-auto flex min-h-svh max-w-5xl flex-col gap-4 px-8 pt-24 pb-10">
+        <p className="font-[DM_Sans] text-sm text-[#E3350D]">Failed to load project: {error}</p>
+      </div>
+    )
+  }
+
+  if (project === undefined) {
+    return (
+      <div className="mx-auto flex min-h-svh max-w-5xl flex-col gap-4 px-8 pt-24 pb-10">
+        <p className="font-[DM_Sans] text-sm text-black/50">Loading…</p>
+      </div>
+    )
+  }
 
   if (!project) {
     return (
