@@ -1,6 +1,10 @@
 import express from 'express';
 import cors from 'cors';
 import 'dotenv/config';
+// Patches Express's router so a thrown/rejected error in an async handler reaches the
+// error middleware below instead of becoming an unhandled rejection that kills the
+// process - Express 4 has no built-in support for async handlers.
+import 'express-async-errors';
 import drawingDetectRouter from './routes/drawingDetect.js';
 import helloRouter from './routes/hello.js';
 import pipelineRouter from './routes/pipeline.js';
@@ -24,6 +28,14 @@ app.use('/api/projects', projectSheetsRouter);
 
 app.get('/api/health', (_req, res) => {
   res.json({ status: 'ok' });
+});
+
+// Catches anything a route handler threw or rejected with (see express-async-errors
+// above) so one broken request returns a 500 instead of crashing every other request
+// the server is handling.
+app.use((err: unknown, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
+  console.error(err);
+  res.status(500).json({ error: err instanceof Error ? err.message : String(err) });
 });
 
 app.listen(PORT, () => {
