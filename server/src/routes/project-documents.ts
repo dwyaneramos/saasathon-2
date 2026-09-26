@@ -23,6 +23,7 @@ interface DocumentResult {
   status: 'extracted' | 'skipped_noise' | 'error';
   needsReviewCount: number;
   error: string | null;
+  extraction: unknown | null;
 }
 
 router.post('/:projectId/documents', upload.array('files'), async (req, res) => {
@@ -84,6 +85,7 @@ router.post('/:projectId/documents', upload.array('files'), async (req, res) => 
             status: 'skipped_noise',
             needsReviewCount: 0,
             error: null,
+            extraction: null,
           });
           continue;
         }
@@ -113,6 +115,7 @@ router.post('/:projectId/documents', upload.array('files'), async (req, res) => 
           status: 'extracted',
           needsReviewCount: validated.needs_review.length,
           error: null,
+          extraction: validated,
         });
       } catch (err) {
         // Errors are logged per-document, never silently swallowed or allowed to abort
@@ -138,6 +141,7 @@ router.post('/:projectId/documents', upload.array('files'), async (req, res) => 
           status: 'error',
           needsReviewCount: 0,
           error: message,
+          extraction: null,
         });
       }
     }
@@ -155,7 +159,7 @@ router.get('/:projectId/documents', async (req, res) => {
   const admin = getSupabaseAdmin();
   const { data, error } = await admin
     .from('documents')
-    .select('id, source_file, doc_type, status, needs_review_count, created_at')
+    .select('id, source_file, doc_type, status, needs_review_count, created_at, extraction')
     .eq('project_id', projectId)
     .order('created_at', { ascending: false });
 
