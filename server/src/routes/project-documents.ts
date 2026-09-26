@@ -26,23 +26,25 @@ interface DocumentResult {
   extraction: unknown | null;
 }
 
-router.post('/:projectId/documents', upload.array('files'), async (req, res) => {
-  const { projectId } = req.params;
-  const files = req.files as Express.Multer.File[] | undefined;
-  if (!files || files.length === 0) {
-    res.status(400).json({ error: 'no files uploaded (field name must be "files")' });
-    return;
-  }
+interface UploadResult {
+  results: DocumentResult[];
+  skippedFiles: { sourceFile: string; reason: string }[];
+}
 
-  const inputDir = mkdtempSync(path.join(tmpdir(), 'project-doc-input-'));
+type Job =
+  | { status: 'pending' }
+  | { status: 'done'; result: UploadResult }
+  | { status: 'error'; error: string };
+
+// In-memory only - fine for a single-instance dev deploy. Each job is cleared a few
+// minutes after it finishes so this never grows unbounded.
+const jobs = new Map<string, Job>();
+const JOB_TTL_MS = 5 * 60 * 1000;
+
+async function runUpload(jobId: string, projectId: string, inputDir: string) {
   const admin = getSupabaseAdmin();
 
   try {
-    for (const file of files) {
-      // originalname is untrusted - strip any directory components before joining.
-      renameSync(file.path, path.join(inputDir, path.basename(file.originalname)));
-    }
-
     const { docs, skipped } = await ingest(inputDir);
     const results: DocumentResult[] = [];
 
@@ -152,13 +154,48 @@ router.post('/:projectId/documents', upload.array('files'), async (req, res) => 
       }
     }
 
-    res.json({ results, skippedFiles: skipped });
+    jobs.set(jobId, { status: 'done', result: { results, skippedFiles: skipped } });
   } catch (err) {
     console.error(`[documents] upload for project ${projectId} failed:`, err);
-    res.status(500).json({ error: err instanceof Error ? err.message : String(err) });
+    jobs.set(jobId, { status: 'error', error: err instanceof Error ? err.message : String(err) });
   } finally {
     rmSync(inputDir, { recursive: true, force: true });
+    setTimeout(() => jobs.delete(jobId), JOB_TTL_MS).unref();
   }
+}
+
+// Starts the (often 30-90s+ per document - each one is a real vision-model call)
+// classify/extract pipeline in the background and returns immediately. A single
+// request held open that long doesn't survive every proxy/tunnel in front of this
+// server, so the client polls GET .../documents/jobs/:jobId instead of waiting on
+// one long response.
+router.post('/:projectId/documents', upload.array('files'), (req, res) => {
+  const { projectId } = req.params;
+  const files = req.files as Express.Multer.File[] | undefined;
+  if (!files || files.length === 0) {
+    res.status(400).json({ error: 'no files uploaded (field name must be "files")' });
+    return;
+  }
+
+  const inputDir = mkdtempSync(path.join(tmpdir(), 'project-doc-input-'));
+  for (const file of files) {
+    // originalname is untrusted - strip any directory components before joining.
+    renameSync(file.path, path.join(inputDir, path.basename(file.originalname)));
+  }
+
+  const jobId = randomUUID();
+  jobs.set(jobId, { status: 'pending' });
+  void runUpload(jobId, projectId, inputDir);
+  res.status(202).json({ jobId });
+});
+
+router.get('/:projectId/documents/jobs/:jobId', (req, res) => {
+  const job = jobs.get(req.params.jobId);
+  if (!job) {
+    res.status(404).json({ error: 'unknown or expired job id' });
+    return;
+  }
+  res.json(job);
 });
 
 router.get('/:projectId/documents', async (req, res) => {

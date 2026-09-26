@@ -3,6 +3,19 @@ import PulsingDot from './PulsingDot'
 import WiringPlanPanel, { type WiringPlanPanelHandle } from './WiringPlanPanel'
 import { documentFromPipelineResult, type DocumentStatus, type PipelineDocResult } from '../data/documents'
 import { useDocuments } from '../lib/documentStore'
+import { runPolledJob } from '../lib/pollJob'
+
+interface UploadResult {
+  results: {
+    docId: string
+    sourceFile: string
+    status: DocumentRow['status']
+    needsReviewCount: number
+    error: string | null
+    extraction: unknown | null
+  }[]
+  skippedFiles: { sourceFile: string; reason: string }[]
+}
 
 interface DocumentRow {
   id: string
@@ -82,23 +95,18 @@ function ProjectDocumentsTab({ projectId, onDocumentsChanged }: ProjectDocuments
     try {
       const formData = new FormData()
       files.forEach((file) => formData.append('files', file))
-      const res = await fetch(`/api/projects/${projectId}/documents`, { method: 'POST', body: formData })
-      const body = await res.json()
-      if (!res.ok) throw new Error(body?.error ?? `request failed (${res.status})`)
+      const uploadResult = await runPolledJob<UploadResult>(
+        () => fetch(`/api/projects/${projectId}/documents`, { method: 'POST', body: formData }),
+        (body) => (body as { jobId: string }).jobId,
+        (jobId) => `/api/projects/${projectId}/documents/jobs/${jobId}`,
+      )
       setFiles([])
       const docs = await refresh()
       onDocumentsChanged?.()
 
       // Keep the Documents tab's card view in sync with what was just processed.
       const ranAt = formatTimestamp(new Date().toISOString())
-      const results = body.results as {
-        docId: string
-        sourceFile: string
-        status: DocumentRow['status']
-        needsReviewCount: number
-        error: string | null
-        extraction: unknown | null
-      }[]
+      const results = uploadResult.results
       addDocuments(
         results.map((r) => {
           const pipelineResult: PipelineDocResult = {
@@ -181,6 +189,13 @@ function ProjectDocumentsTab({ projectId, onDocumentsChanged }: ProjectDocuments
           )}
         </button>
       </form>
+
+      {uploading && (
+        <p className="font-[DM_Sans] text-xs text-black/50">
+          Each file runs through a real vision-model pass, so this can take a minute or two per
+          document - it's still working even if nothing seems to be happening.
+        </p>
+      )}
 
       {error && (
         <p className="rounded-lg border border-[#E3350D]/30 bg-[#E3350D]/5 p-4 whitespace-pre-line font-[DM_Sans] text-sm text-[#E3350D]">
