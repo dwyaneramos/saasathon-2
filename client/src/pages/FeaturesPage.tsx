@@ -154,12 +154,6 @@ function FeaturesPage() {
           >
             Start free
           </Link>
-          <Link
-            to="/pricing"
-            className="rounded-full border-2 border-[#1a1a1a] px-6 py-2 font-[DM_Sans] text-sm font-semibold uppercase tracking-wide text-[#1a1a1a] transition-colors hover:bg-white"
-          >
-            See pricing
-          </Link>
         </div>
       </section>
     </div>

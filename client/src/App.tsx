@@ -9,7 +9,6 @@ import DocumentPage from './pages/DocumentPage'
 import FeaturesPage from './pages/FeaturesPage'
 import LandingPage from './pages/LandingPage'
 import NewProjectPage from './pages/NewProjectPage'
-import PricingPage from './pages/PricingPage'
 import ProjectOverviewPage from './pages/ProjectOverviewPage'
 import ProjectsPage from './pages/ProjectsPage'
 
@@ -27,16 +26,12 @@ function App() {
           <Link to="/features" className={navLinkClass}>
             Features
           </Link>
-          <Link to="/pricing" className={navLinkClass}>
-            Pricing
-          </Link>
         </div>
         <AccountMenu />
       </nav>
       <Routes>
         <Route path="/" element={<LandingPage />} />
         <Route path="/features" element={<FeaturesPage />} />
-        <Route path="/pricing" element={<PricingPage />} />
         <Route path="/login" element={<AuthPage mode="login" />} />
         <Route path="/signup" element={<AuthPage mode="signup" />} />
         <Route path="/projects" element={<RequireAuth><ProjectsPage /></RequireAuth>} />
