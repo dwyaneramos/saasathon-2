@@ -1,0 +1,4 @@
+cable_id,from,to,cable_type,length_m,notes
+C1,SB1,DB-KITCHEN,TPS 2.5mm2,18,synthetic fixture row
+C2,SB1,DB-GARAGE,TPS 4mm2,25,synthetic fixture row
+C3,DB-KITCHEN,OUTLET-1,TPS 1.5mm2,6,synthetic fixture row

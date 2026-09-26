@@ -1,0 +1,14 @@
+SPARKY EXAMPLE ELECTRICAL LTD
+123 Fictional Street, Sampleton 6011
+Ph: 04 000 0000  Email: quotes@example.co.nz
+
+QUOTE Q-2026-0042
+Date: 12/03/2026
+Site: 45 Placeholder Road, Sampleton
+
+Line  Description                              Qty   Unit    Unit Price   Total
+1     Supply and install 10A lighting circuit    3    each    120.00       360.00
+2     Supply and install 16A power circuit       4    each    150.00       600.00
+3     Switchboard upgrade - 12 way board         1    each    850.00       850.00
+
+This is a synthetic fixture for pipeline testing only - not a real job or client.

@@ -1,0 +1,122 @@
+import type { ExtractionDocument } from './schema.js';
+
+/** Not an AS/NZS threshold - our own review-triage cutoff. Below this, a human should look. */
+export const CONFIDENCE_THRESHOLD = 0.6;
+
+export interface Flag {
+  item_ref: string;
+  reason: string;
+}
+
+interface FieldLike {
+  value: unknown;
+  provenance: 'extracted' | 'inferred' | 'assumed';
+  rule: string | null;
+  confidence: number;
+}
+
+function isFieldLike(v: unknown): v is FieldLike {
+  return typeof v === 'object' && v !== null && 'provenance' in v && 'confidence' in v && 'value' in v;
+}
+
+function checkFields(record: object, refPrefix: string, flags: Flag[]): void {
+  for (const [key, val] of Object.entries(record)) {
+    if (key === 'trace' || !isFieldLike(val)) continue;
+    const ref = `${refPrefix}.${key}`;
+    if (val.provenance !== 'extracted' && !val.rule) {
+      flags.push({ item_ref: ref, reason: `provenance is '${val.provenance}' but no rule/source was cited` });
+    }
+    if (val.confidence < CONFIDENCE_THRESHOLD) {
+      flags.push({ item_ref: ref, reason: `confidence ${val.confidence.toFixed(2)} is below the review threshold` });
+    }
+  }
+}
+
+function checkList(list: readonly object[], listName: string, flags: Flag[]): void {
+  list.forEach((item, i) => checkFields(item, `${listName}[${i}]`, flags));
+}
+
+function checkDuplicateCircuitIds(doc: ExtractionDocument, flags: Flag[]): void {
+  const seen = new Map<string, number>();
+  doc.circuits.forEach((circuit, i) => {
+    const id = circuit.circuit_id.value;
+    if (id == null) return;
+    const key = `${circuit.switchboard_ref.value ?? '(unknown board)'}::${id}`;
+    const firstIndex = seen.get(key);
+    if (firstIndex === undefined) {
+      seen.set(key, i);
+      return;
+    }
+    flags.push({
+      item_ref: `circuits[${i}].circuit_id`,
+      reason: `duplicate circuit_id "${id}" on the same switchboard (also at circuits[${firstIndex}])`,
+    });
+  });
+}
+
+function checkDanglingSwitchboardRefs(doc: ExtractionDocument, flags: Flag[]): void {
+  if (doc.switchboards.length === 0) return; // nothing extracted to check against
+  const knownBoards = new Set(
+    doc.switchboards.map((s) => s.board_id.value).filter((v): v is string => v != null),
+  );
+  doc.circuits.forEach((circuit, i) => {
+    const ref = circuit.switchboard_ref.value;
+    if (ref && !knownBoards.has(ref)) {
+      flags.push({
+        item_ref: `circuits[${i}].switchboard_ref`,
+        reason: `references switchboard "${ref}" which wasn't extracted as a switchboard on this document`,
+      });
+    }
+  });
+}
+
+function checkEmptyExtraction(doc: ExtractionDocument, flags: Flag[]): void {
+  const totalItems =
+    doc.legend_items.length +
+    doc.circuits.length +
+    doc.switchboards.length +
+    doc.single_line_elements.length +
+    doc.compliance_records.length +
+    doc.financial_line_items.length +
+    doc.cable_schedule_rows.length +
+    (doc.site_info ? 1 : 0);
+  if (totalItems === 0 && doc.doc_type !== 'other_noise') {
+    flags.push({
+      item_ref: 'document',
+      reason: `no data extracted from a document classified as "${doc.doc_type}" - verify manually`,
+    });
+  }
+}
+
+function dedupe(flags: Flag[]): Flag[] {
+  const seen = new Set<string>();
+  return flags.filter((f) => {
+    const key = `${f.item_ref}\u0000${f.reason}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
+/**
+ * Structural sanity checks only - no AS/NZS content or cable-sizing rules.
+ * Over-flags by design: every issue here becomes a needs_review entry, never a silent drop.
+ */
+export function validateExtraction(doc: ExtractionDocument): ExtractionDocument {
+  const flags: Flag[] = [...doc.needs_review];
+
+  checkList(doc.legend_items, 'legend_items', flags);
+  checkList(doc.circuits, 'circuits', flags);
+  checkList(doc.switchboards, 'switchboards', flags);
+  checkList(doc.single_line_elements, 'single_line_elements', flags);
+  checkList(doc.compliance_records, 'compliance_records', flags);
+  checkList(doc.financial_line_items, 'financial_line_items', flags);
+  checkList(doc.cable_schedule_rows, 'cable_schedule_rows', flags);
+  if (doc.site_info) checkFields(doc.site_info, 'site_info', flags);
+
+  checkDuplicateCircuitIds(doc, flags);
+  checkDanglingSwitchboardRefs(doc, flags);
+  checkEmptyExtraction(doc, flags);
+
+  return { ...doc, needs_review: dedupe(flags) };
+}

@@ -1,12 +1,8 @@
 import type { ReactNode } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import AddProjectCard from '../components/AddProjectCard'
 import ProjectCard from '../components/ProjectCard'
 import { MY_PROJECTS, SHARED_PROJECTS, type Project } from '../data/projects'
-
-function handleAddProject() {
-  console.log('Add project clicked')
-}
 
 interface ProjectSectionProps {
   title: string
@@ -17,7 +13,7 @@ interface ProjectSectionProps {
 function ProjectSection({ title, projects, trailingSlot }: ProjectSectionProps) {
   return (
     <section className="flex flex-col gap-6">
-      <h2 className="font-[DM_Sans] text-lg font-semibold uppercase tracking-wide text-[#E3350D]">
+      <h2 className="font-[DM_Sans] text-lg font-semibold uppercase tracking-wide text-[#1a1a1a]">
         {title}
       </h2>
       <div className="flex flex-wrap gap-6">
@@ -31,6 +27,8 @@ function ProjectSection({ title, projects, trailingSlot }: ProjectSectionProps) 
 }
 
 function ProjectsPage() {
+  const navigate = useNavigate()
+
   return (
     <div className="mx-auto flex min-h-svh max-w-5xl flex-col gap-4 px-8 py-10">
       <Link
@@ -44,7 +42,7 @@ function ProjectsPage() {
         <ProjectSection
           title="My Projects"
           projects={MY_PROJECTS}
-          trailingSlot={<AddProjectCard onClick={handleAddProject} />}
+          trailingSlot={<AddProjectCard onClick={() => navigate('/projects/new')} />}
         />
 
         <ProjectSection title="Shared Projects" projects={SHARED_PROJECTS} />
