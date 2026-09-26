@@ -1,10 +1,12 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { Link, useParams } from 'react-router-dom'
+import { Link, useParams, useSearchParams } from 'react-router-dom'
 import DrawingCanvas from '../components/drawing/DrawingCanvas'
 import Inspector from '../components/drawing/Inspector'
 import ProjectSummary from '../components/drawing/ProjectSummary'
 import Toolbar from '../components/drawing/Toolbar'
 import UploadDropzone from '../components/drawing/UploadDropzone'
+import DocumentsPanel from '../components/documents/DocumentsPanel'
+import DocumentPipeline from '../components/pipeline/DocumentPipeline'
 import ProjectDocumentsTab from '../components/ProjectDocumentsTab'
 import { getProjectById, type Project } from '../lib/projects'
 import { useDrawing } from '../lib/drawingStore'
@@ -13,11 +15,13 @@ import { computeMaterials } from '../lib/materials'
 import { fitView, zoomView, type View } from '../lib/view'
 import type { Selection, Tool } from '../types/drawing'
 
-type WorkspaceTab = 'drawing' | 'pipeline'
+type WorkspaceTab = 'drawing' | 'aiPipeline' | 'pipeline' | 'documents'
 
 const TABS: { id: WorkspaceTab; label: string }[] = [
   { id: 'drawing', label: 'Drawing' },
-  { id: 'pipeline', label: 'Document pipeline' },
+  { id: 'aiPipeline', label: 'Document Pipeline' },
+  { id: 'pipeline', label: 'Quick Pipeline' },
+  { id: 'documents', label: 'Documents' },
 ]
 
 const backLinkClass =
@@ -28,7 +32,12 @@ function ProjectWorkspace({ project }: { project: Project }) {
   const { drawing } = store
   const background = drawing.background
 
-  const [tab, setTab] = useState<WorkspaceTab>('drawing')
+  const [searchParams] = useSearchParams()
+  const [tab, setTab] = useState<WorkspaceTab>(() => {
+    // Lets the document page link back to the tab it came from.
+    const requested = searchParams.get('tab')
+    return TABS.some((t) => t.id === requested) ? (requested as WorkspaceTab) : 'drawing'
+  })
   const [tool, setTool] = useState<Tool>({ type: 'select' })
   const [selection, setSelection] = useState<Selection>(null)
   // The view resets to "fit" whenever a different background is loaded.
@@ -74,7 +83,7 @@ function ProjectWorkspace({ project }: { project: Project }) {
   return (
     <div className="flex min-h-svh flex-col gap-6 px-6 pt-24 pb-6 lg:h-svh lg:flex-row">
       <section className="flex min-h-[70svh] min-w-0 flex-1 flex-col gap-4 lg:min-h-0">
-        <div role="tablist" className="flex gap-1 self-start rounded-full border-2 border-[#1a1a1a] bg-white p-1">
+        <div role="tablist" className="flex flex-wrap gap-1 self-start rounded-full border-2 border-[#1a1a1a] bg-white p-1">
           {TABS.map((t) => (
             <button
               key={t.id}
@@ -94,10 +103,26 @@ function ProjectWorkspace({ project }: { project: Project }) {
         {/* Kept mounted while hidden so pipeline results survive switching tabs. */}
         <div
           className={`min-h-0 flex-1 overflow-auto rounded-lg border border-black/10 bg-black/[0.03] p-6 ${
-            tab === 'pipeline' ? '' : 'hidden'
+            tab === 'aiPipeline' ? '' : 'hidden'
           }`}
         >
           <ProjectDocumentsTab projectId={project.id} />
+        </div>
+
+        <div
+          className={`min-h-0 flex-1 overflow-hidden rounded-lg border border-black/10 bg-black/[0.03] ${
+            tab === 'pipeline' ? '' : 'hidden'
+          }`}
+        >
+          <DocumentPipeline projectId={project.id} />
+        </div>
+
+        <div
+          className={`min-h-0 flex-1 overflow-hidden rounded-lg border border-black/10 bg-black/[0.03] ${
+            tab === 'documents' ? '' : 'hidden'
+          }`}
+        >
+          <DocumentsPanel projectId={project.id} />
         </div>
 
         <div
