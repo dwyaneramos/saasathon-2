@@ -21,11 +21,11 @@ function LandingPage() {
           </p>
         </div>
         <Link
-          to={loggedIn ? '/projects' : '/login'}
+          to={loggedIn ? '/projects' : '/signup'}
           state={loggedIn ? undefined : { from: '/projects' }}
           className="rounded-full bg-[#FFCC00] px-6 py-2.5 font-[DM_Sans] text-sm uppercase tracking-wide text-[#1a1a1a] transition-colors hover:bg-[#ffd633]"
         >
-          View Projects
+          {loggedIn ? 'View Projects' : 'Get Started'}
         </Link>
       </div>
     </div>
