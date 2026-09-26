@@ -1,4 +1,7 @@
 import { Link, Route, Routes } from 'react-router-dom'
+import AccountMenu from './components/AccountMenu'
+import RequireAuth from './components/RequireAuth'
+import AuthPage from './pages/AuthPage'
 import ClientProjectPage from './pages/ClientProjectPage'
 import FeaturesPage from './pages/FeaturesPage'
 import LandingPage from './pages/LandingPage'
@@ -25,21 +28,18 @@ function App() {
             Pricing
           </Link>
         </div>
-        <a
-          href="#"
-          className="rounded-full bg-[#FFCC00] px-4 py-1.5 font-[DM_Sans] text-xs font-semibold tracking-wide text-[#1a1a1a] uppercase transition-colors hover:bg-[#E3350D] hover:text-white"
-        >
-          Login
-        </a>
+        <AccountMenu />
       </nav>
       <Routes>
         <Route path="/" element={<LandingPage />} />
         <Route path="/features" element={<FeaturesPage />} />
         <Route path="/pricing" element={<PricingPage />} />
-        <Route path="/projects" element={<ProjectsPage />} />
-        <Route path="/projects/new" element={<NewProjectPage />} />
-        <Route path="/projects/:id" element={<ProjectOverviewPage />} />
-        <Route path="/client/projects/:id" element={<ClientProjectPage />} />
+        <Route path="/login" element={<AuthPage mode="login" />} />
+        <Route path="/signup" element={<AuthPage mode="signup" />} />
+        <Route path="/projects" element={<RequireAuth><ProjectsPage /></RequireAuth>} />
+        <Route path="/projects/new" element={<RequireAuth><NewProjectPage /></RequireAuth>} />
+        <Route path="/projects/:id" element={<RequireAuth><ProjectOverviewPage /></RequireAuth>} />
+        <Route path="/client/projects/:id" element={<RequireAuth><ClientProjectPage /></RequireAuth>} />
       </Routes>
     </div>
   )
