@@ -129,6 +129,7 @@ export const Circuit = withTrace({
   phase: field(z.enum(['1', '2', '3'])),
   rated_current_a: field(z.number()).describe('Breaker/circuit rating as printed on the schedule.'),
   switchboard_ref: field(z.string()).describe('board_id of the switchboard this circuit belongs to.'),
+  length_m: field(z.number()),
 });
 
 export const SwitchboardSchedule = withTrace({

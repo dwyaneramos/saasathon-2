@@ -1,4 +1,5 @@
 import { forwardRef, useEffect, useImperativeHandle, useState } from 'react'
+import { estimateFromCatalogue } from '../lib/wiringPlanPricing'
 import PulsingDot from './PulsingDot'
 
 type PlanConfidence = 'low' | 'medium' | 'high'
@@ -82,8 +83,20 @@ const WiringPlanPanel = forwardRef<WiringPlanPanelHandle, WiringPlanPanelProps>(
   const sortedItems = plan
     ? [...plan.items].sort((a, b) => CONFIDENCE_ORDER[a.confidence] - CONFIDENCE_ORDER[b.confidence])
     : []
-  const pricedItems = sortedItems.filter((item) => item.price != null)
-  const pricedTotal = pricedItems.reduce((sum, item) => sum + (item.price ?? 0), 0)
+
+  // Two distinct kinds of number, never blended: a stated quote price is a fact from a
+  // source document; a catalogue estimate is our own deterministic rate x length guess,
+  // only computed when no quote already prices the item.
+  const quotedItems = sortedItems.filter((item) => item.price != null)
+  const quotedTotal = quotedItems.reduce((sum, item) => sum + (item.price ?? 0), 0)
+  const estimates = new Map(
+    sortedItems
+      .filter((item) => item.price == null)
+      .map((item) => [item, estimateFromCatalogue(item.description, item.quantity)] as const)
+      .filter((entry): entry is [WiringPlanItem, NonNullable<(typeof entry)[1]>] => entry[1] != null),
+  )
+  const estimatedTotal = [...estimates.values()].reduce((sum, est) => sum + est.total, 0)
+  const uncostedCount = sortedItems.length - quotedItems.length - estimates.size
 
   return (
     <div className="flex flex-col gap-4 border-t border-black/10 pt-6">
@@ -113,43 +126,66 @@ const WiringPlanPanel = forwardRef<WiringPlanPanelHandle, WiringPlanPanelProps>(
 
       {plan && (
         <div className="flex flex-col gap-3">
-          <div className="flex flex-wrap items-baseline justify-between gap-2">
+          <div className="flex flex-col gap-1">
             <p className="font-[DM_Sans] text-xs uppercase tracking-wide text-black/50">
               Generated {new Date(plan.generated_at).toLocaleString()}
             </p>
-            {pricedItems.length > 0 && (
+            {(quotedItems.length > 0 || estimates.size > 0) && (
               <p className="font-[DM_Sans] text-sm text-[#1a1a1a]">
-                <span className="text-xs uppercase tracking-wide text-black/50">Priced so far </span>
-                <span className="font-semibold">{nzd.format(pricedTotal)}</span>
-                {pricedItems.length < sortedItems.length && (
+                {quotedItems.length > 0 && (
+                  <>
+                    <span className="text-xs uppercase tracking-wide text-black/50">Quoted </span>
+                    <span className="font-semibold">{nzd.format(quotedTotal)}</span>
+                  </>
+                )}
+                {quotedItems.length > 0 && estimates.size > 0 && <span className="text-black/30"> · </span>}
+                {estimates.size > 0 && (
+                  <>
+                    <span className="text-xs uppercase tracking-wide text-black/50">Catalogue estimate </span>
+                    <span className="font-semibold text-[#1a1a1a]/70">~{nzd.format(estimatedTotal)}</span>
+                  </>
+                )}
+                {uncostedCount > 0 && (
                   <span className="text-xs text-black/50">
                     {' '}
-                    ({pricedItems.length} of {sortedItems.length} items - the rest have no stated price yet)
+                    ({uncostedCount} item{uncostedCount === 1 ? '' : 's'} still uncosted)
                   </span>
                 )}
               </p>
             )}
           </div>
-          {sortedItems.map((item, i) => (
-            <div key={i} className="flex flex-col gap-2 rounded-lg border border-black/10 bg-black/[0.03] p-4">
-              <div className="flex flex-wrap items-center justify-between gap-2">
-                <span className="font-[DM_Sans] text-sm font-semibold text-[#1a1a1a]">
-                  {item.description}
-                  {item.quantity && ` — ${item.quantity}`}
-                  {item.price != null && ` · ${nzd.format(item.price)}`}
-                </span>
-                <span
-                  className={`rounded-full px-2.5 py-0.5 font-[DM_Sans] text-xs font-semibold uppercase ${CONFIDENCE_STYLE[item.confidence]}`}
-                >
-                  {item.confidence}
-                </span>
+          {sortedItems.map((item, i) => {
+            const estimate = estimates.get(item)
+            return (
+              <div key={i} className="flex flex-col gap-2 rounded-lg border border-black/10 bg-black/[0.03] p-4">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <span className="font-[DM_Sans] text-sm font-semibold text-[#1a1a1a]">
+                    {item.description}
+                    {item.quantity && ` — ${item.quantity}`}
+                    {item.price != null && ` · ${nzd.format(item.price)}`}
+                    {item.price == null && estimate && (
+                      <span className="font-normal text-[#1a1a1a]/60 italic"> · ~{nzd.format(estimate.total)} est.</span>
+                    )}
+                  </span>
+                  <span
+                    className={`rounded-full px-2.5 py-0.5 font-[DM_Sans] text-xs font-semibold uppercase ${CONFIDENCE_STYLE[item.confidence]}`}
+                  >
+                    {item.confidence}
+                  </span>
+                </div>
+                <p className="font-[DM_Sans] text-sm text-[#1a1a1a]/80">{item.reason}</p>
+                {item.price == null && estimate && (
+                  <p className="font-[DM_Sans] text-xs text-black/50">
+                    Catalogue estimate: {nzd.format(estimate.pricePerMetre)}/m × {estimate.lengthM}m (TPS 2C+E
+                    assumed) — not a supplier quote.
+                  </p>
+                )}
+                {item.needs_info && (
+                  <p className="font-[DM_Sans] text-sm text-[#E3350D]">Needs info: {item.needs_info}</p>
+                )}
               </div>
-              <p className="font-[DM_Sans] text-sm text-[#1a1a1a]/80">{item.reason}</p>
-              {item.needs_info && (
-                <p className="font-[DM_Sans] text-sm text-[#E3350D]">Needs info: {item.needs_info}</p>
-              )}
-            </div>
-          ))}
+            )
+          })}
         </div>
       )}
     </div>

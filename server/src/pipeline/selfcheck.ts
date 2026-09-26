@@ -96,6 +96,7 @@ function testValidateFlagsDuplicateCircuitIds(): void {
     phase: makeField('1' as const),
     rated_current_a: makeField(10),
     switchboard_ref: makeField('SB1'),
+    length_m: makeField(12),
   });
   doc.circuits = [circuit('C1'), circuit('C1')];
   const validated = validateExtraction(doc);
