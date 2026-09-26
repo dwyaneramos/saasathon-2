@@ -3,7 +3,7 @@ import { EXTRACT_MODEL, getOpenAI, refusalReason } from './client.js';
 import type { IngestedDoc } from './ingest.js';
 import { ClassificationResult, ExtractionDocument } from './schema.js';
 
-const INSTRUCTIONS = `You extract structured data for a New Zealand electrical contractor's job archive from the attached document (a site plan, wiring/electrical layout plan, switchboard schedule, single-line diagram, legend, or legacy job paperwork - COC, ESC, quote, invoice, or cable schedule).
+const INSTRUCTIONS = `You extract structured data for a New Zealand electrical contractor's job archive from the attached document (a site plan, power plan, lighting/RCP plan, wiring/electrical layout plan, LV or specialty plan, switchboard/panel schedule, single-line diagram, legend, or legacy job paperwork - COC, ESC, quote, invoice, or cable schedule).
 
 Rules, in order of importance:
 1. Never invent data. Extract only what the document actually states.
@@ -17,8 +17,13 @@ Rules, in order of importance:
    - Name every step of that arithmetic in \`rule\` (e.g. "SB to L1: ~4.2m along dimensioned wall + 2.4m vertical rise + 20% routing = 7.9m"), set provenance 'inferred', and cap confidence at 0.6 regardless of how precise the dimensions look, since this is still a geometric estimate, not a printed cable length.
    Never do this when the plan gives no scale or dimensions at all - leave \`length_m\` null instead. This exception covers cable length only; never estimate cable type, rating, sizing, or pricing this way.
 5. Do not quote or reproduce text from AS/NZS standards documents, even if referenced on the plan - note that a standard is referenced (e.g. in a needs_review entry) without copying its content.
-6. Populate every item's trace object: doc_id, page (1-indexed as it appears in the document), bbox (a normalized 0-1 bounding box on the page if you can identify one, else null), method ('vision-llm' for a page read as an image/PDF, 'text-llm' for content read from supplied plain text), and confidence.
-7. Skip pages already classified as noise (given below) unless they clearly contain job data the classifier missed - extract those anyway and add a needs_review entry explaining the mismatch.`;
+6. Populate every item's trace object: doc_id, page (1-indexed as it appears in the document), bbox (a normalized 0-1 bounding box on the page if you can identify one, else null), region (how a drafter would name the spot - grid reference "C7", "row 4", a zone name - else null), method ('vision-llm' for a page read as an image/PDF, 'text-llm' for content read from supplied plain text), and confidence.
+7. Skip pages already classified as noise (given below) unless they clearly contain job data the classifier missed - extract those anyway and add a needs_review entry explaining the mismatch.
+
+On plan sheets, the order below is mandatory - symbol legends are NOT standardized between drafters or firms, so this sheet's own legend is the only authority:
+8. Populate \`legend_items\` FIRST, from this sheet's own legend or key block, in the drafter's own words. Do not merge legends across sheets.
+9. Only then populate \`plan_symbols\`, interpreting each symbol via a \`legend_ref\` pointing at this sheet's legend. If the sheet has NO legend, leave every \`symbol_meaning\` and \`legend_ref\` null, set their confidence low, and add one needs_review entry saying the sheet has no legend - never substitute a generic or "typical" legend.
+10. \`circuit_tag\` is whatever circuit number is physically written next to the symbol, exactly as printed. Null when no number is written. \`rated_current_a\` is a rating printed next to the symbol - never a rating you worked out from the load type. Record what the sheets actually disagree about rather than reconciling it: if a plan and a schedule are uploaded together and disagree, extract both as printed and let the merge stage raise the conflict.`;
 
 export async function extractDoc(doc: IngestedDoc, classification: ClassificationResult): Promise<ExtractionDocument> {
   const stream = getOpenAI().responses.stream({

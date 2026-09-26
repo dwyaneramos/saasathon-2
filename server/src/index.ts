@@ -1,10 +1,10 @@
 import express from 'express';
 import cors from 'cors';
 import 'dotenv/config';
-import documentsRouter from './routes/documents.js';
 import helloRouter from './routes/hello.js';
 import pipelineRouter from './routes/pipeline.js';
 import projectDocumentsRouter from './routes/project-documents.js';
+import projectSheetsRouter from './routes/project-sheets.js';
 import wiringPlanRouter from './routes/wiring-plan.js';
 
 const app = express();
@@ -17,7 +17,7 @@ app.use('/api/hello', helloRouter);
 app.use('/api/pipeline', pipelineRouter);
 app.use('/api/projects', projectDocumentsRouter);
 app.use('/api/projects', wiringPlanRouter);
-app.use('/api/documents', documentsRouter);
+app.use('/api/projects', projectSheetsRouter);
 
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok' });

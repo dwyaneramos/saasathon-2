@@ -40,7 +40,7 @@ function App() {
         <Route path="/projects" element={<ProjectsPage />} />
         <Route path="/projects/new" element={<NewProjectPage />} />
         <Route path="/projects/:id" element={<ProjectOverviewPage />} />
-        <Route path="/documents/:id" element={<DocumentPage />} />
+        <Route path="/projects/:projectId/documents/:docId" element={<DocumentPage />} />
         <Route path="/client/projects/:id" element={<ClientProjectPage />} />
       </Routes>
     </div>
