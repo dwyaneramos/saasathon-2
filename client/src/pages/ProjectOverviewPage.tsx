@@ -1,10 +1,11 @@
 import { useCallback, useMemo, useState } from 'react'
-import { Link, useParams } from 'react-router-dom'
+import { Link, useParams, useSearchParams } from 'react-router-dom'
 import DrawingCanvas from '../components/drawing/DrawingCanvas'
 import Inspector from '../components/drawing/Inspector'
 import ProjectSummary from '../components/drawing/ProjectSummary'
 import Toolbar from '../components/drawing/Toolbar'
 import UploadDropzone from '../components/drawing/UploadDropzone'
+import DocumentsPanel from '../components/documents/DocumentsPanel'
 import DocumentPipeline from '../components/pipeline/DocumentPipeline'
 import { getProjectById, type Project } from '../data/projects'
 import { useDrawing } from '../lib/drawingStore'
@@ -13,11 +14,12 @@ import { computeMaterials } from '../lib/materials'
 import { fitView, zoomView, type View } from '../lib/view'
 import type { Selection, Tool } from '../types/drawing'
 
-type WorkspaceTab = 'drawing' | 'pipeline'
+type WorkspaceTab = 'drawing' | 'pipeline' | 'documents'
 
 const TABS: { id: WorkspaceTab; label: string }[] = [
   { id: 'drawing', label: 'Drawing' },
-  { id: 'pipeline', label: 'Document pipeline' },
+  { id: 'pipeline', label: 'Pipeline' },
+  { id: 'documents', label: 'Documents' },
 ]
 
 const backLinkClass =
@@ -28,7 +30,12 @@ function ProjectWorkspace({ project }: { project: Project }) {
   const { drawing } = store
   const background = drawing.background
 
-  const [tab, setTab] = useState<WorkspaceTab>('drawing')
+  const [searchParams] = useSearchParams()
+  const [tab, setTab] = useState<WorkspaceTab>(() => {
+    // Lets the document page link back to the tab it came from.
+    const requested = searchParams.get('tab')
+    return TABS.some((t) => t.id === requested) ? (requested as WorkspaceTab) : 'drawing'
+  })
   const [tool, setTool] = useState<Tool>({ type: 'select' })
   const [selection, setSelection] = useState<Selection>(null)
   // The view resets to "fit" whenever a different background is loaded.
@@ -97,7 +104,15 @@ function ProjectWorkspace({ project }: { project: Project }) {
             tab === 'pipeline' ? '' : 'hidden'
           }`}
         >
-          <DocumentPipeline />
+          <DocumentPipeline projectId={project.id} />
+        </div>
+
+        <div
+          className={`min-h-0 flex-1 overflow-hidden rounded-lg border border-black/10 bg-black/[0.03] ${
+            tab === 'documents' ? '' : 'hidden'
+          }`}
+        >
+          <DocumentsPanel projectId={project.id} />
         </div>
 
         <div

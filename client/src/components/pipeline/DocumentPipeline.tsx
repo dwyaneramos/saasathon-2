@@ -1,14 +1,10 @@
 import { useState } from 'react'
-
-interface PipelineDocResult {
-  docId: string
-  sourceFile: string
-  status: 'extracted' | 'skipped_all_noise' | 'error'
-  outputFile: string | null
-  needsReviewCount: number
-  error: string | null
-  extracted: unknown | null
-}
+import {
+  documentFromPipelineResult,
+  STATUS_STYLE,
+  type PipelineDocResult,
+} from '../../data/documents'
+import { useDocuments } from '../../lib/documentStore'
 
 interface PipelineResponse {
   ranAt: string
@@ -16,17 +12,24 @@ interface PipelineResponse {
   results: PipelineDocResult[]
 }
 
-const STATUS_STYLE: Record<PipelineDocResult['status'], string> = {
-  extracted: 'text-[#1a7a3d]',
-  skipped_all_noise: 'text-black/50',
-  error: 'text-[#E3350D]',
+interface DocumentPipelineProps {
+  projectId: string
 }
 
-function DocumentPipeline() {
+function formatTimestamp(iso: string): string {
+  return new Date(iso).toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+  })
+}
+
+function DocumentPipeline({ projectId }: DocumentPipelineProps) {
   const [files, setFiles] = useState<File[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [result, setResult] = useState<PipelineResponse | null>(null)
+  const { addDocuments } = useDocuments()
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -43,7 +46,15 @@ function DocumentPipeline() {
       const res = await fetch('/api/pipeline/run', { method: 'POST', body: formData })
       const body = await res.json()
       if (!res.ok) throw new Error(body?.error ?? `request failed (${res.status})`)
-      setResult(body as PipelineResponse)
+
+      const pipelineResult = body as PipelineResponse
+      setResult(pipelineResult)
+      // Keep the results so they can be browsed later from the Documents tab.
+      addDocuments(
+        pipelineResult.results.map((doc) =>
+          documentFromPipelineResult(doc, projectId, formatTimestamp(pipelineResult.ranAt)),
+        ),
+      )
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err))
     } finally {
