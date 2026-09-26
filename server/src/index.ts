@@ -19,7 +19,7 @@ app.use('/api/projects', projectDocumentsRouter);
 app.use('/api/projects', wiringPlanRouter);
 app.use('/api/projects', projectSheetsRouter);
 
-app.get('/api/health', (req, res) => {
+app.get('/api/health', (_req, res) => {
   res.json({ status: 'ok' });
 });
 
