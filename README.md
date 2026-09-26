@@ -1,4 +1,4 @@
-# Hackathon Project
+# Saasathon Project
 
 React (Vite) frontend + Express backend.
 
@@ -23,8 +23,8 @@ Run both frontend and backend together:
 npm run dev
 ```
 
-- Frontend: http://localhost:5173
-- Backend: http://localhost:5050 (API routes under `/api`)
+- Frontend: <http://localhost:5173>
+- Backend: <http://localhost:5050> (API routes under `/api`)
 
 The Vite dev server proxies `/api/*` requests to the Express server, so the frontend can just call `fetch('/api/...')`.
 
