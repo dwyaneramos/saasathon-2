@@ -19,7 +19,7 @@ const inputClass =
   'w-full rounded-md border border-black/15 bg-white px-3 py-2 font-[DM_Sans] text-sm text-[#1a1a1a] focus:border-[#1a1a1a] focus:outline-none'
 
 function AuthPage({ mode }: { mode: Mode }) {
-  const { user, loading, continueAsGuest } = useAuth()
+  const { user, isGuest, loading, continueAsGuest } = useAuth()
   const navigate = useNavigate()
   const location = useLocation()
   const redirectTo = (location.state as { from?: string } | null)?.from ?? '/projects'
@@ -31,7 +31,8 @@ function AuthPage({ mode }: { mode: Mode }) {
   const [notice, setNotice] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
 
-  if (!loading && user) return <Navigate to={redirectTo} replace />
+  // Guests (demo account) still see this page so they can log in for real.
+  if (!loading && user && !isGuest) return <Navigate to={redirectTo} replace />
 
   const isSignup = mode === 'signup'
 
@@ -154,9 +155,18 @@ function AuthPage({ mode }: { mode: Mode }) {
 
         <button
           type="button"
-          onClick={() => {
-            continueAsGuest()
-            navigate(redirectTo, { replace: true })
+          disabled={submitting}
+          onClick={async () => {
+            setError(null)
+            setSubmitting(true)
+            try {
+              if (!isGuest) await continueAsGuest()
+              navigate(redirectTo, { replace: true })
+            } catch (guestError) {
+              setError(guestError instanceof Error ? guestError.message : String(guestError))
+            } finally {
+              setSubmitting(false)
+            }
           }}
           className="rounded-full border-2 border-[#1a1a1a] px-4 py-2 font-[DM_Sans] text-sm font-semibold uppercase tracking-wide text-[#1a1a1a] transition-colors hover:bg-[#1a1a1a] hover:text-white"
         >

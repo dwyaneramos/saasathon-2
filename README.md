@@ -32,6 +32,31 @@ The Vite dev server proxies `/api/*` requests to the Express server, so the fron
 
 Add a new router file in `server/src/routes/`, then mount it in `server/src/index.js`.
 
+## Sheet intake (how a job is created)
+
+A job is built from its drawing set rather than a form. Each sheet is uploaded on its own and
+tagged by hand with what it is, so nothing is auto-classified into the wrong bucket: power plan,
+lighting/RCP, panel schedule, single-line diagram, LV/specialty, site plan.
+
+An intake sheet is a `documents` row with `status = 'intake'` and a `sheet_type`, not a separate
+table - the file lives in the `project-documents` Storage bucket, exactly as a processed
+document does, so one lifecycle covers both. `sheet_type` is the estimator's label; `doc_type`
+stays the classifier's opinion, and a disagreement between the two stays visible instead of
+being overwritten.
+
+The cross-reference and document tabs stay locked until the set has all three required sheets
+(a power plan, a panel schedule and a single-line diagram) - the Drawing tab is deliberately
+unlocked, being an independent manual tool. `POST /api/projects/:id/sheets/process` refuses to
+run on an incomplete set, because cross-referencing two sheets out of three would produce
+confidently wrong merges.
+
+```bash
+GET    /api/projects/:id/sheets            # the set + which required types are missing
+POST   /api/projects/:id/sheets            # one sheet: multipart `file` + `sheet_type`
+DELETE /api/projects/:id/sheets/:sheetId   # remove a sheet and its stored file
+POST   /api/projects/:id/sheets/process    # run the pipeline over the whole set
+```
+
 ## Document pipeline (NZ electrical)
 
 `server/src/pipeline/` ingests site plans, wiring/electrical layout plans, and legacy job

@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import {
   formatCurrency,
@@ -7,7 +7,7 @@ import {
   type ChangeRequest,
   type ChangeStatus,
 } from '../data/changes'
-import { getProjectById } from '../data/projects'
+import { getProjectById, type Project } from '../lib/projects'
 import { notifyChangeDecision, notifyDecisionUndone } from '../lib/notifications'
 
 const labelClass = 'font-[DM_Sans] text-xs uppercase tracking-wide text-black/50'
@@ -31,11 +31,33 @@ function StatusBadge({ status }: { status: ChangeStatus }) {
 
 function ClientProjectPage() {
   const { id } = useParams<{ id: string }>()
-  const project = id ? getProjectById(id) : undefined
+  const [project, setProject] = useState<Project | null | undefined>(undefined)
   const [changes, setChanges] = useState<ChangeRequest[]>(() =>
     id ? getChangesForProject(id) : [],
   )
   const [comments, setComments] = useState<Record<string, string>>({})
+
+  useEffect(() => {
+    if (!id) {
+      setProject(null)
+      return
+    }
+    let cancelled = false
+    getProjectById(id).then((result) => {
+      if (!cancelled) setProject(result)
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [id])
+
+  if (project === undefined) {
+    return (
+      <div className="mx-auto flex min-h-svh max-w-5xl flex-col gap-4 px-8 pt-28 pb-10">
+        <p className="font-[DM_Sans] text-sm text-black/50">Loading…</p>
+      </div>
+    )
+  }
 
   if (!project) {
     return (

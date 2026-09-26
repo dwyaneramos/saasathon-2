@@ -3,6 +3,7 @@ import AccountMenu from './components/AccountMenu'
 import RequireAuth from './components/RequireAuth'
 import AuthPage from './pages/AuthPage'
 import ClientProjectPage from './pages/ClientProjectPage'
+import DocumentPage from './pages/DocumentPage'
 import FeaturesPage from './pages/FeaturesPage'
 import LandingPage from './pages/LandingPage'
 import NewProjectPage from './pages/NewProjectPage'
@@ -39,6 +40,7 @@ function App() {
         <Route path="/projects" element={<RequireAuth><ProjectsPage /></RequireAuth>} />
         <Route path="/projects/new" element={<RequireAuth><NewProjectPage /></RequireAuth>} />
         <Route path="/projects/:id" element={<RequireAuth><ProjectOverviewPage /></RequireAuth>} />
+        <Route path="/projects/:projectId/documents/:docId" element={<RequireAuth><DocumentPage /></RequireAuth>} />
         <Route path="/client/projects/:id" element={<RequireAuth><ClientProjectPage /></RequireAuth>} />
       </Routes>
     </div>

@@ -1,0 +1,159 @@
+import { forwardRef, useEffect, useImperativeHandle, useState } from 'react'
+import PulsingDot from './PulsingDot'
+
+type PlanConfidence = 'low' | 'medium' | 'high'
+
+interface WiringPlanItem {
+  description: string
+  quantity: string | null
+  price: number | null
+  confidence: PlanConfidence
+  reason: string
+  needs_info: string | null
+  sources: { doc_id: string; item_ref: string }[]
+}
+
+const nzd = new Intl.NumberFormat('en-NZ', { style: 'currency', currency: 'NZD' })
+
+interface WiringPlanRow {
+  id: string
+  project_id: string
+  generated_at: string
+  items: WiringPlanItem[]
+}
+
+const CONFIDENCE_STYLE: Record<PlanConfidence, string> = {
+  high: 'bg-green-600/15 text-green-800',
+  medium: 'bg-[#FFCC00]/30 text-[#1a1a1a]',
+  low: 'bg-[#E3350D]/15 text-[#E3350D]',
+}
+
+const CONFIDENCE_ORDER: Record<PlanConfidence, number> = { low: 0, medium: 1, high: 2 }
+
+export interface WiringPlanPanelHandle {
+  generate: () => void
+}
+
+interface WiringPlanPanelProps {
+  projectId: string
+  hasExtractedDocuments: boolean
+}
+
+const WiringPlanPanel = forwardRef<WiringPlanPanelHandle, WiringPlanPanelProps>(function WiringPlanPanel(
+  { projectId, hasExtractedDocuments },
+  ref,
+) {
+  const [plan, setPlan] = useState<WiringPlanRow | null>(null)
+  const [generating, setGenerating] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    let cancelled = false
+    fetch(`/api/projects/${projectId}/wiring-plan`)
+      .then((res) => res.json())
+      .then((body) => {
+        if (!cancelled) setPlan(body.plan)
+      })
+      .catch(() => {
+        /* no plan yet is not an error the user needs to see on load */
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [projectId])
+
+  async function generate() {
+    setGenerating(true)
+    setError(null)
+    try {
+      const res = await fetch(`/api/projects/${projectId}/wiring-plan`, { method: 'POST' })
+      const body = await res.json()
+      if (!res.ok) throw new Error(body?.error ?? `request failed (${res.status})`)
+      setPlan(body as WiringPlanRow)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err))
+    } finally {
+      setGenerating(false)
+    }
+  }
+
+  useImperativeHandle(ref, () => ({ generate }))
+
+  const sortedItems = plan
+    ? [...plan.items].sort((a, b) => CONFIDENCE_ORDER[a.confidence] - CONFIDENCE_ORDER[b.confidence])
+    : []
+  const pricedItems = sortedItems.filter((item) => item.price != null)
+  const pricedTotal = pricedItems.reduce((sum, item) => sum + (item.price ?? 0), 0)
+
+  return (
+    <div className="flex flex-col gap-4 border-t border-black/10 pt-6">
+      <div className="flex items-center justify-between gap-4">
+        <h2 className="font-[DM_Sans] text-lg font-semibold uppercase tracking-wide text-[#1a1a1a]">
+          Wiring Plan
+        </h2>
+        {generating && (
+          <span className="flex items-center gap-2 font-[DM_Sans] text-xs font-semibold uppercase tracking-wide text-black/50">
+            <PulsingDot className="bg-[#E3350D]" />
+            Generating…
+          </span>
+        )}
+      </div>
+
+      {error && (
+        <p className="rounded-lg border border-[#E3350D]/30 bg-[#E3350D]/5 p-4 font-[DM_Sans] text-sm text-[#E3350D]">
+          {error}
+        </p>
+      )}
+
+      {!hasExtractedDocuments && !plan && (
+        <p className="font-[DM_Sans] text-sm text-black/50">
+          Upload and extract at least one document before generating a plan.
+        </p>
+      )}
+
+      {plan && (
+        <div className="flex flex-col gap-3">
+          <div className="flex flex-wrap items-baseline justify-between gap-2">
+            <p className="font-[DM_Sans] text-xs uppercase tracking-wide text-black/50">
+              Generated {new Date(plan.generated_at).toLocaleString()}
+            </p>
+            {pricedItems.length > 0 && (
+              <p className="font-[DM_Sans] text-sm text-[#1a1a1a]">
+                <span className="text-xs uppercase tracking-wide text-black/50">Priced so far </span>
+                <span className="font-semibold">{nzd.format(pricedTotal)}</span>
+                {pricedItems.length < sortedItems.length && (
+                  <span className="text-xs text-black/50">
+                    {' '}
+                    ({pricedItems.length} of {sortedItems.length} items - the rest have no stated price yet)
+                  </span>
+                )}
+              </p>
+            )}
+          </div>
+          {sortedItems.map((item, i) => (
+            <div key={i} className="flex flex-col gap-2 rounded-lg border border-black/10 bg-black/[0.03] p-4">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <span className="font-[DM_Sans] text-sm font-semibold text-[#1a1a1a]">
+                  {item.description}
+                  {item.quantity && ` — ${item.quantity}`}
+                  {item.price != null && ` · ${nzd.format(item.price)}`}
+                </span>
+                <span
+                  className={`rounded-full px-2.5 py-0.5 font-[DM_Sans] text-xs font-semibold uppercase ${CONFIDENCE_STYLE[item.confidence]}`}
+                >
+                  {item.confidence}
+                </span>
+              </div>
+              <p className="font-[DM_Sans] text-sm text-[#1a1a1a]/80">{item.reason}</p>
+              {item.needs_info && (
+                <p className="font-[DM_Sans] text-sm text-[#E3350D]">Needs info: {item.needs_info}</p>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+})
+
+export default WiringPlanPanel

@@ -17,6 +17,9 @@ export const CLASSIFY_MODEL = process.env.OPENAI_CLASSIFY_MODEL || 'gpt-6-luna';
 /** Flagship model for structured extraction - this is where wrong output costs the most downstream. */
 export const EXTRACT_MODEL = process.env.OPENAI_EXTRACT_MODEL || 'gpt-6-astra';
 
+/** Wiring plan synthesis reads the same extracted facts extraction was trusted with - same tier by default. */
+export const PLAN_MODEL = process.env.OPENAI_PLAN_MODEL || EXTRACT_MODEL;
+
 /** Pulls the model's stated refusal reason out of a Responses API output array, if present. */
 export function refusalReason(output: unknown): string | null {
   if (!Array.isArray(output)) return null;
