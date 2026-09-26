@@ -134,7 +134,7 @@ function ProjectDocumentsTab({ projectId, onDocumentsChanged }: ProjectDocuments
       // The request succeeds even when individual files fail - surface those failures.
       const problems = [
         ...results.filter((r) => r.status === 'error').map((r) => `${r.sourceFile}: ${r.error ?? 'failed'}`),
-        ...((body.skippedFiles ?? []) as { sourceFile: string; reason: string }[]).map(
+        ...((uploadResult.skippedFiles ?? []) as { sourceFile: string; reason: string }[]).map(
           (s) => `${s.sourceFile}: skipped (${s.reason})`,
         ),
       ]
