@@ -1,6 +1,6 @@
 import { useState, type FormEvent, type ReactNode } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { addProject, type ProjectType } from '../data/projects'
+import { addProject, type ProjectType } from '../lib/projects'
 
 const STATUSES = ['Not Started', 'In Progress', 'On Track', 'At Risk', 'Completed']
 const PRIORITIES = ['Low', 'Medium', 'High']
@@ -9,16 +9,6 @@ const PROJECT_TYPES: ProjectType[] = ['Residential', 'Commercial']
 const labelClass = 'font-[DM_Sans] text-xs uppercase tracking-wide text-black/50'
 const inputClass =
   'w-full rounded-lg border border-black/10 bg-black/[0.03] px-4 py-2.5 font-[DM_Sans] text-sm text-[#1a1a1a] outline-none transition-colors focus:border-[#E3350D] focus:bg-white'
-
-// Matches the display format used by the existing projects, e.g. "Sep 12, 2026".
-function formatDate(isoDate: string): string {
-  const [year, month, day] = isoDate.split('-').map(Number)
-  return new Date(year, month - 1, day).toLocaleDateString('en-US', {
-    month: 'short',
-    day: 'numeric',
-    year: 'numeric',
-  })
-}
 
 interface FieldProps {
   label: string
@@ -51,27 +41,35 @@ function NewProjectPage() {
   const [progress, setProgress] = useState('0')
   const [description, setDescription] = useState('')
   const [error, setError] = useState('')
+  const [submitting, setSubmitting] = useState(false)
 
-  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
     if (dueDate < startDate) {
       setError('Due date must be on or after the start date.')
       return
     }
 
-    const project = addProject({
-      name: name.trim(),
-      type,
-      address: address.trim(),
-      status,
-      owner: owner.trim(),
-      priority,
-      startDate: formatDate(startDate),
-      dueDate: formatDate(dueDate),
-      progress: `${progress}%`,
-      description: description.trim(),
-    })
-    navigate(`/projects/${project.id}`)
+    setSubmitting(true)
+    setError('')
+    try {
+      const project = await addProject({
+        name: name.trim(),
+        type,
+        address: address.trim(),
+        status,
+        owner: owner.trim(),
+        priority,
+        startDate,
+        dueDate,
+        progress: Number(progress),
+        description: description.trim(),
+      })
+      navigate(`/projects/${project.id}`)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err))
+      setSubmitting(false)
+    }
   }
 
   return (
@@ -229,9 +227,10 @@ function NewProjectPage() {
           </Link>
           <button
             type="submit"
-            className="rounded-full bg-[#FFCC00] px-5 py-2 font-[DM_Sans] text-xs font-semibold uppercase tracking-wide text-[#1a1a1a] transition-colors hover:bg-[#E3350D] hover:text-white"
+            disabled={submitting}
+            className="rounded-full bg-[#FFCC00] px-5 py-2 font-[DM_Sans] text-xs font-semibold uppercase tracking-wide text-[#1a1a1a] transition-colors hover:bg-[#E3350D] hover:text-white disabled:cursor-not-allowed disabled:opacity-40"
           >
-            Create Project
+            {submitting ? 'Creating…' : 'Create Project'}
           </button>
         </div>
       </form>

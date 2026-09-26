@@ -1,0 +1,123 @@
+import { useEffect, useState, type FormEvent } from 'react'
+import WiringPlanPanel from './WiringPlanPanel'
+
+interface DocumentRow {
+  id: string
+  source_file: string
+  doc_type: string | null
+  status: 'pending' | 'extracted' | 'skipped_noise' | 'error'
+  needs_review_count: number
+  created_at: string
+}
+
+const STATUS_STYLE: Record<DocumentRow['status'], string> = {
+  pending: 'text-black/50',
+  extracted: 'text-[#1a7a3d]',
+  skipped_noise: 'text-black/50',
+  error: 'text-[#E3350D]',
+}
+
+interface ProjectDocumentsTabProps {
+  projectId: string
+}
+
+function ProjectDocumentsTab({ projectId }: ProjectDocumentsTabProps) {
+  const [documents, setDocuments] = useState<DocumentRow[]>([])
+  const [loading, setLoading] = useState(true)
+  const [uploading, setUploading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [files, setFiles] = useState<File[]>([])
+
+  async function refresh() {
+    setError(null)
+    try {
+      const res = await fetch(`/api/projects/${projectId}/documents`)
+      const body = await res.json()
+      if (!res.ok) throw new Error(body?.error ?? `request failed (${res.status})`)
+      setDocuments(body.documents as DocumentRow[])
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err))
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    refresh()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [projectId])
+
+  async function handleUpload(event: FormEvent) {
+    event.preventDefault()
+    if (files.length === 0) return
+    setUploading(true)
+    setError(null)
+    try {
+      const formData = new FormData()
+      files.forEach((file) => formData.append('files', file))
+      const res = await fetch(`/api/projects/${projectId}/documents`, { method: 'POST', body: formData })
+      const body = await res.json()
+      if (!res.ok) throw new Error(body?.error ?? `request failed (${res.status})`)
+      setFiles([])
+      await refresh()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err))
+    } finally {
+      setUploading(false)
+    }
+  }
+
+  const hasExtracted = documents.some((doc) => doc.status === 'extracted')
+
+  return (
+    <div className="flex flex-col gap-6">
+      <form onSubmit={handleUpload} className="flex flex-wrap items-center gap-4">
+        <input
+          type="file"
+          multiple
+          accept=".pdf,.png,.jpg,.jpeg,.webp,.gif,.txt,.csv,.tsv"
+          onChange={(e) => setFiles(Array.from(e.target.files ?? []))}
+          className="font-[DM_Sans] text-sm"
+        />
+        <button
+          type="submit"
+          disabled={files.length === 0 || uploading}
+          className="rounded-full bg-[#FFCC00] px-5 py-2 font-[DM_Sans] text-sm font-semibold uppercase tracking-wide text-[#1a1a1a] transition-colors hover:bg-[#E3350D] hover:text-white disabled:cursor-not-allowed disabled:opacity-40"
+        >
+          {uploading ? 'Uploading…' : 'Upload'}
+        </button>
+      </form>
+
+      {error && (
+        <p className="rounded-lg border border-[#E3350D]/30 bg-[#E3350D]/5 p-4 font-[DM_Sans] text-sm text-[#E3350D]">
+          {error}
+        </p>
+      )}
+
+      {loading ? (
+        <p className="font-[DM_Sans] text-sm text-black/50">Loading documents…</p>
+      ) : documents.length === 0 ? (
+        <p className="font-[DM_Sans] text-sm text-black/50">No documents uploaded yet.</p>
+      ) : (
+        <ul className="flex flex-col gap-2">
+          {documents.map((doc) => (
+            <li
+              key={doc.id}
+              className="flex items-center justify-between gap-4 rounded-lg border border-black/10 bg-black/[0.03] p-4"
+            >
+              <span className="font-[DM_Sans] text-sm text-[#1a1a1a]">{doc.source_file}</span>
+              <span className={`font-[DM_Sans] text-xs font-semibold uppercase ${STATUS_STYLE[doc.status]}`}>
+                {doc.status}
+                {doc.needs_review_count > 0 && ` (${doc.needs_review_count} needs review)`}
+              </span>
+            </li>
+          ))}
+        </ul>
+      )}
+
+      <WiringPlanPanel projectId={projectId} hasExtractedDocuments={hasExtracted} />
+    </div>
+  )
+}
+
+export default ProjectDocumentsTab
