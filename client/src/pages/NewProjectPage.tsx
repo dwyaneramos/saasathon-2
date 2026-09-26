@@ -2,8 +2,6 @@ import { useState, type FormEvent, type ReactNode } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { addProject, type ProjectType } from '../lib/projects'
 
-const STATUSES = ['Not Started', 'In Progress', 'On Track', 'At Risk', 'Completed']
-const PRIORITIES = ['Low', 'Medium', 'High']
 const PROJECT_TYPES: ProjectType[] = ['Residential', 'Commercial']
 
 const labelClass = 'font-[DM_Sans] text-xs uppercase tracking-wide text-black/50'
@@ -33,12 +31,8 @@ function NewProjectPage() {
   const [name, setName] = useState('')
   const [type, setType] = useState<ProjectType>('Residential')
   const [address, setAddress] = useState('')
-  const [status, setStatus] = useState(STATUSES[0])
-  const [owner, setOwner] = useState('')
-  const [priority, setPriority] = useState('Medium')
   const [startDate, setStartDate] = useState('')
   const [dueDate, setDueDate] = useState('')
-  const [progress, setProgress] = useState('0')
   const [description, setDescription] = useState('')
   const [error, setError] = useState('')
   const [submitting, setSubmitting] = useState(false)
@@ -57,12 +51,8 @@ function NewProjectPage() {
         name: name.trim(),
         type,
         address: address.trim(),
-        status,
-        owner: owner.trim(),
-        priority,
         startDate,
         dueDate,
-        progress: Number(progress),
         description: description.trim(),
       })
       navigate(`/projects/${project.id}`)
@@ -128,55 +118,6 @@ function NewProjectPage() {
             placeholder="Street, city, state, postcode"
             value={address}
             onChange={(e) => setAddress(e.target.value)}
-            className={inputClass}
-          />
-        </Field>
-
-        <Field label="Owner" htmlFor="owner">
-          <input
-            id="owner"
-            required
-            value={owner}
-            onChange={(e) => setOwner(e.target.value)}
-            className={inputClass}
-          />
-        </Field>
-
-        <Field label="Status" htmlFor="status">
-          <select
-            id="status"
-            value={status}
-            onChange={(e) => setStatus(e.target.value)}
-            className={inputClass}
-          >
-            {STATUSES.map((option) => (
-              <option key={option}>{option}</option>
-            ))}
-          </select>
-        </Field>
-
-        <Field label="Priority" htmlFor="priority">
-          <select
-            id="priority"
-            value={priority}
-            onChange={(e) => setPriority(e.target.value)}
-            className={inputClass}
-          >
-            {PRIORITIES.map((option) => (
-              <option key={option}>{option}</option>
-            ))}
-          </select>
-        </Field>
-
-        <Field label="Progress (%)" htmlFor="progress">
-          <input
-            id="progress"
-            type="number"
-            required
-            min={0}
-            max={100}
-            value={progress}
-            onChange={(e) => setProgress(e.target.value)}
             className={inputClass}
           />
         </Field>

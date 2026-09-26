@@ -20,12 +20,8 @@ export interface NewProjectInput {
   name: string
   type: ProjectType
   address: string
-  status: string
-  owner: string
-  priority: string
   startDate: string // ISO yyyy-mm-dd
   dueDate: string // ISO yyyy-mm-dd
-  progress: number // 0-100
   description: string
 }
 
@@ -89,6 +85,8 @@ export async function getProjectById(id: string): Promise<Project | null> {
   return data ? toProject(data as ProjectRow) : null
 }
 
+// owner/status/priority/progress aren't collected at creation time - the projects
+// table defaults them ('', 'Not started', 'Medium', 0) until they're set later.
 export async function addProject(input: NewProjectInput): Promise<Project> {
   const { data, error } = await supabase
     .from('projects')
@@ -96,12 +94,8 @@ export async function addProject(input: NewProjectInput): Promise<Project> {
       name: input.name,
       type: input.type,
       address: input.address,
-      status: input.status,
-      owner: input.owner,
-      priority: input.priority,
       start_date: input.startDate,
       due_date: input.dueDate,
-      progress: input.progress,
       description: input.description,
     })
     .select()

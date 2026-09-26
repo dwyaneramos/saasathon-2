@@ -1,5 +1,6 @@
-import { useEffect, useState, type FormEvent } from 'react'
-import WiringPlanPanel from './WiringPlanPanel'
+import { useEffect, useRef, useState, type FormEvent } from 'react'
+import PulsingDot from './PulsingDot'
+import WiringPlanPanel, { type WiringPlanPanelHandle } from './WiringPlanPanel'
 
 interface DocumentRow {
   id: string
@@ -27,16 +28,20 @@ function ProjectDocumentsTab({ projectId }: ProjectDocumentsTabProps) {
   const [uploading, setUploading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [files, setFiles] = useState<File[]>([])
+  const wiringPlanRef = useRef<WiringPlanPanelHandle>(null)
 
-  async function refresh() {
+  async function refresh(): Promise<DocumentRow[]> {
     setError(null)
     try {
       const res = await fetch(`/api/projects/${projectId}/documents`)
       const body = await res.json()
       if (!res.ok) throw new Error(body?.error ?? `request failed (${res.status})`)
-      setDocuments(body.documents as DocumentRow[])
+      const docs = body.documents as DocumentRow[]
+      setDocuments(docs)
+      return docs
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err))
+      return []
     } finally {
       setLoading(false)
     }
@@ -59,7 +64,12 @@ function ProjectDocumentsTab({ projectId }: ProjectDocumentsTabProps) {
       const body = await res.json()
       if (!res.ok) throw new Error(body?.error ?? `request failed (${res.status})`)
       setFiles([])
-      await refresh()
+      const docs = await refresh()
+      // Regenerate the plan whenever a fresh extraction is available, so it always
+      // reflects everything uploaded so far, without waiting for a manual click.
+      if (docs.some((doc) => doc.status === 'extracted')) {
+        wiringPlanRef.current?.generate()
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err))
     } finally {
@@ -82,9 +92,16 @@ function ProjectDocumentsTab({ projectId }: ProjectDocumentsTabProps) {
         <button
           type="submit"
           disabled={files.length === 0 || uploading}
-          className="rounded-full bg-[#FFCC00] px-5 py-2 font-[DM_Sans] text-sm font-semibold uppercase tracking-wide text-[#1a1a1a] transition-colors hover:bg-[#E3350D] hover:text-white disabled:cursor-not-allowed disabled:opacity-40"
+          className="flex items-center gap-2 rounded-full bg-[#FFCC00] px-5 py-2 font-[DM_Sans] text-sm font-semibold uppercase tracking-wide text-[#1a1a1a] transition-colors hover:bg-[#E3350D] hover:text-white disabled:cursor-not-allowed disabled:opacity-40"
         >
-          {uploading ? 'Uploading…' : 'Upload'}
+          {uploading ? (
+            <>
+              <PulsingDot className="bg-[#1a1a1a]" />
+              Uploading…
+            </>
+          ) : (
+            'Upload'
+          )}
         </button>
       </form>
 
@@ -115,7 +132,7 @@ function ProjectDocumentsTab({ projectId }: ProjectDocumentsTabProps) {
         </ul>
       )}
 
-      <WiringPlanPanel projectId={projectId} hasExtractedDocuments={hasExtracted} />
+      <WiringPlanPanel ref={wiringPlanRef} projectId={projectId} hasExtractedDocuments={hasExtracted} />
     </div>
   )
 }

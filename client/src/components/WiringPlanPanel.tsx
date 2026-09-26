@@ -1,4 +1,5 @@
-import { useEffect, useState } from 'react'
+import { forwardRef, useEffect, useImperativeHandle, useState } from 'react'
+import PulsingDot from './PulsingDot'
 
 type PlanConfidence = 'low' | 'medium' | 'high'
 
@@ -26,12 +27,19 @@ const CONFIDENCE_STYLE: Record<PlanConfidence, string> = {
 
 const CONFIDENCE_ORDER: Record<PlanConfidence, number> = { low: 0, medium: 1, high: 2 }
 
+export interface WiringPlanPanelHandle {
+  generate: () => void
+}
+
 interface WiringPlanPanelProps {
   projectId: string
   hasExtractedDocuments: boolean
 }
 
-function WiringPlanPanel({ projectId, hasExtractedDocuments }: WiringPlanPanelProps) {
+const WiringPlanPanel = forwardRef<WiringPlanPanelHandle, WiringPlanPanelProps>(function WiringPlanPanel(
+  { projectId, hasExtractedDocuments },
+  ref,
+) {
   const [plan, setPlan] = useState<WiringPlanRow | null>(null)
   const [generating, setGenerating] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -66,6 +74,8 @@ function WiringPlanPanel({ projectId, hasExtractedDocuments }: WiringPlanPanelPr
     }
   }
 
+  useImperativeHandle(ref, () => ({ generate }))
+
   const sortedItems = plan
     ? [...plan.items].sort((a, b) => CONFIDENCE_ORDER[a.confidence] - CONFIDENCE_ORDER[b.confidence])
     : []
@@ -76,14 +86,12 @@ function WiringPlanPanel({ projectId, hasExtractedDocuments }: WiringPlanPanelPr
         <h2 className="font-[DM_Sans] text-lg font-semibold uppercase tracking-wide text-[#1a1a1a]">
           Wiring Plan
         </h2>
-        <button
-          type="button"
-          onClick={generate}
-          disabled={!hasExtractedDocuments || generating}
-          className="rounded-full bg-[#FFCC00] px-5 py-2 font-[DM_Sans] text-sm font-semibold uppercase tracking-wide text-[#1a1a1a] transition-colors hover:bg-[#E3350D] hover:text-white disabled:cursor-not-allowed disabled:opacity-40"
-        >
-          {generating ? 'Generating…' : plan ? 'Regenerate Plan' : 'Generate Wiring Plan'}
-        </button>
+        {generating && (
+          <span className="flex items-center gap-2 font-[DM_Sans] text-xs font-semibold uppercase tracking-wide text-black/50">
+            <PulsingDot className="bg-[#E3350D]" />
+            Generating…
+          </span>
+        )}
       </div>
 
       {error && (
@@ -126,6 +134,6 @@ function WiringPlanPanel({ projectId, hasExtractedDocuments }: WiringPlanPanelPr
       )}
     </div>
   )
-}
+})
 
 export default WiringPlanPanel
