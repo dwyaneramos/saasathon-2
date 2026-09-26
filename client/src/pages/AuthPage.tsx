@@ -19,7 +19,7 @@ const inputClass =
   'w-full rounded-md border border-black/15 bg-white px-3 py-2 font-[DM_Sans] text-sm text-[#1a1a1a] focus:border-[#1a1a1a] focus:outline-none'
 
 function AuthPage({ mode }: { mode: Mode }) {
-  const { user, isGuest, loading, continueAsGuest } = useAuth()
+  const { user, loading } = useAuth()
   const navigate = useNavigate()
   const location = useLocation()
   const redirectTo = (location.state as { from?: string } | null)?.from ?? '/projects'
@@ -31,8 +31,7 @@ function AuthPage({ mode }: { mode: Mode }) {
   const [notice, setNotice] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
 
-  // Guests (demo account) still see this page so they can log in for real.
-  if (!loading && user && !isGuest) return <Navigate to={redirectTo} replace />
+  if (!loading && user) return <Navigate to={redirectTo} replace />
 
   const isSignup = mode === 'signup'
 
@@ -147,41 +146,22 @@ function AuthPage({ mode }: { mode: Mode }) {
           </button>
         </form>
 
-        <div className="flex items-center gap-3">
-          <span className="h-px flex-1 bg-black/10" />
-          <span className="font-[DM_Sans] text-xs uppercase tracking-wide text-black/40">or</span>
-          <span className="h-px flex-1 bg-black/10" />
-        </div>
-
-        <button
-          type="button"
-          disabled={submitting}
-          onClick={async () => {
-            setError(null)
-            setSubmitting(true)
-            try {
-              if (!isGuest) await continueAsGuest()
-              navigate(redirectTo, { replace: true })
-            } catch (guestError) {
-              setError(guestError instanceof Error ? guestError.message : String(guestError))
-            } finally {
-              setSubmitting(false)
-            }
-          }}
-          className="rounded-full border-2 border-[#1a1a1a] px-4 py-2 font-[DM_Sans] text-sm font-semibold uppercase tracking-wide text-[#1a1a1a] transition-colors hover:bg-[#1a1a1a] hover:text-white"
-        >
-          Try without login
-        </button>
-
         {DEV_LOGIN && (
-          <button
-            type="button"
-            onClick={handleDevLogin}
-            disabled={submitting}
-            className="rounded-full border-2 border-dashed border-[#E3350D] px-4 py-2 font-[DM_Sans] text-xs font-semibold uppercase tracking-wide text-[#E3350D] transition-colors hover:bg-[#E3350D]/10 disabled:opacity-50"
-          >
-            Dev quick login · {DEV_LOGIN.email}
-          </button>
+          <>
+            <div className="flex items-center gap-3">
+              <span className="h-px flex-1 bg-black/10" />
+              <span className="font-[DM_Sans] text-xs uppercase tracking-wide text-black/40">or</span>
+              <span className="h-px flex-1 bg-black/10" />
+            </div>
+            <button
+              type="button"
+              onClick={handleDevLogin}
+              disabled={submitting}
+              className="rounded-full border-2 border-dashed border-[#E3350D] px-4 py-2 font-[DM_Sans] text-xs font-semibold uppercase tracking-wide text-[#E3350D] transition-colors hover:bg-[#E3350D]/10 disabled:opacity-50"
+            >
+              Dev quick login · {DEV_LOGIN.email}
+            </button>
+          </>
         )}
 
         <p className="text-center font-[DM_Sans] text-sm text-black/60">

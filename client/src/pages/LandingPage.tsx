@@ -6,9 +6,8 @@ import { useAuth } from '../lib/auth'
 
 function LandingPage() {
   const heroRef = useRef<HTMLDivElement>(null)
-  const { user, isGuest } = useAuth()
-  // Anyone not properly logged in sees the login page first, where they can also try without login.
-  const loggedIn = !!user && !isGuest
+  const { user } = useAuth()
+  const loggedIn = !!user
 
   return (
     <div className="flex min-h-svh flex-col items-start justify-center px-8 text-left md:px-16">
