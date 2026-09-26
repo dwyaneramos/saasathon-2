@@ -101,6 +101,10 @@ function ProjectWorkspace({ project }: { project: Project }) {
       // A local running list so labels number correctly across the batch - store.drawing
       // won't reflect components added earlier in this same loop until the next render.
       const placedSoFar: PlacedComponent[] = [...store.drawing.components]
+      // Maps the model's own per-response ids (e.g. "c1") to the real component ids we
+      // generate, so wires can be linked to the actual placed component - not just guessed
+      // by proximity, which is what let some wires end up pointing at nothing.
+      const idMap = new Map<string, string>()
       let added = 0
       for (const detected of result.components) {
         if (detected.confidence < AUTO_PLACE_CONFIDENCE) continue
@@ -114,13 +118,33 @@ function ProjectWorkspace({ project }: { project: Project }) {
         }
         store.addComponent(placed)
         placedSoFar.push(placed)
+        idMap.set(detected.id, placed.id)
         added += 1
       }
 
       let addedWires = 0
+      let skippedWires = 0
       for (const detected of result.wires) {
         if (detected.confidence < AUTO_PLACE_CONFIDENCE) continue
-        store.addWire({ id: newId(), points: detected.points, ...DEFAULT_WIRE })
+
+        // Only null when the model says the wire genuinely has no component there; anything
+        // else must resolve to a component we actually placed, or this wire is dropped rather
+        // than drawn half-connected to a component that was filtered out or never existed.
+        const fromId = detected.fromComponentId ? idMap.get(detected.fromComponentId) : undefined
+        const toId = detected.toComponentId ? idMap.get(detected.toComponentId) : undefined
+        if ((detected.fromComponentId && !fromId) || (detected.toComponentId && !toId)) {
+          skippedWires += 1
+          continue
+        }
+
+        // wirePath() re-derives the endpoints from the linked component's own position, so
+        // strip the model's (slightly imprecise) traced endpoints to avoid a tiny duplicate
+        // kink where the wire meets the marker.
+        let points = detected.points
+        if (fromId) points = points.slice(1)
+        if (toId) points = points.slice(0, points.length - 1)
+
+        store.addWire({ id: newId(), fromId, toId, points, ...DEFAULT_WIRE })
         addedWires += 1
       }
 
@@ -128,7 +152,9 @@ function ProjectWorkspace({ project }: { project: Project }) {
       if (scaleApplied) store.setScale(result.metresPerPx!)
 
       window.alert(
-        `Detected ${added} component${added === 1 ? '' : 's'} and ${addedWires} wire${addedWires === 1 ? '' : 's'} on the plan. ` +
+        `Detected ${added} component${added === 1 ? '' : 's'} and ${addedWires} wire${addedWires === 1 ? '' : 's'} on the plan` +
+          (skippedWires > 0 ? ` (skipped ${skippedWires} wire${skippedWires === 1 ? '' : 's'} that didn't clearly connect to a placed component)` : '') +
+          '. ' +
           (scaleApplied
             ? `Scale set automatically (${result.scaleEvidence ?? 'measurement found on the plan'}) - ready for AR.`
             : 'No reliable measurement was found on the plan - use the SCALE tool to calibrate before using AR.'),

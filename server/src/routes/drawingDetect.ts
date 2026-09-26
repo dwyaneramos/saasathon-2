@@ -16,6 +16,7 @@ const ComponentKind = z.enum([
 ]);
 
 const DetectedComponent = z.object({
+  id: z.string().describe('A short id you assign (e.g. "c1") so wires can reference which component they connect to.'),
   kind: ComponentKind,
   x: z.number().describe('Pixel x-coordinate in the source image, at its native resolution.'),
   y: z.number().describe('Pixel y-coordinate in the source image, at its native resolution.'),
@@ -23,10 +24,18 @@ const DetectedComponent = z.object({
 });
 
 const DetectedWire = z.object({
+  from_component_id: z
+    .string()
+    .nullable()
+    .describe('The id of the component this wire starts at. Null only if it genuinely does not terminate at any drawn symbol (e.g. runs off the edge of the plan) - not because you are unsure which one.'),
+  to_component_id: z
+    .string()
+    .nullable()
+    .describe('The id of the component this wire ends at. Null only if it genuinely does not terminate at any drawn symbol - not because you are unsure which one.'),
   points: z
     .array(z.object({ x: z.number(), y: z.number() }))
     .min(2)
-    .describe('Ordered points tracing the drawn line, at the image native resolution.'),
+    .describe('Ordered points tracing the drawn line, at the image native resolution, including its start and end.'),
   confidence: z.number().min(0).max(1),
 });
 
@@ -59,14 +68,16 @@ conventional floor-plan symbol:
 - switchboard: a labelled rectangle (often "DB" or "SB"), usually with a triangular fill mark
 - junction-box: a small labelled box, distinct from a switchboard
 
-Report each symbol's pixel position (x, y) at the image's native resolution (given below). Never
-invent a component that isn't actually drawn - if a mark is ambiguous, either leave it out or
-include it with low confidence rather than guessing its kind.
+Report each symbol's pixel position (x, y) at the image's native resolution (given below), and give
+it a short id of your own choosing (e.g. "c1", "c2") for wires to reference. Never invent a
+component that isn't actually drawn - if a mark is ambiguous, either leave it out or include it
+with low confidence rather than guessing its kind.
 
 Also identify every wire/circuit path actually drawn on the plan - typically a dashed or dash-dot
 line connecting a switch to a light, or a socket/circuit run back to the switchboard. Check the
 plan's own legend if it has one, for its exact line conventions. Report each as an ordered list of
-points (x, y) tracing its drawn path at the image's native resolution, from one end to the other.
+points (x, y) tracing its drawn path at the image's native resolution, from one end to the other,
+and set from_component_id / to_component_id to the ids of the two components it visibly connects.
 Do not invent a connection that isn't actually drawn as a line - two components simply being near
 each other is not evidence of a wire between them.
 

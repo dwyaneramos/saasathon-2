@@ -1,6 +1,7 @@
 import type { ComponentKind, Point } from '../types/drawing'
 
 export interface DetectedComponent {
+  id: string
   kind: ComponentKind
   x: number
   y: number
@@ -8,6 +9,8 @@ export interface DetectedComponent {
 }
 
 export interface DetectedWire {
+  fromComponentId: string | null
+  toComponentId: string | null
   points: Point[]
   confidence: number
 }
@@ -20,9 +23,16 @@ export interface DrawingDetectionResult {
   scaleConfidence: number
 }
 
+interface RawDetectedWire {
+  from_component_id: string | null
+  to_component_id: string | null
+  points: Point[]
+  confidence: number
+}
+
 interface DetectResultBody {
   components: DetectedComponent[]
-  wires: DetectedWire[]
+  wires: RawDetectedWire[]
   scale: { metres_per_pixel: number | null; evidence: string | null; confidence: number }
 }
 
@@ -114,7 +124,12 @@ export async function detectDrawing(
 
     return {
       components: job.result.components,
-      wires: job.result.wires,
+      wires: job.result.wires.map((w) => ({
+        fromComponentId: w.from_component_id,
+        toComponentId: w.to_component_id,
+        points: w.points,
+        confidence: w.confidence,
+      })),
       metresPerPx: job.result.scale.metres_per_pixel,
       scaleEvidence: job.result.scale.evidence,
       scaleConfidence: job.result.scale.confidence,
