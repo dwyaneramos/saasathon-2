@@ -9,7 +9,7 @@ function LandingPage() {
       </ElectricTitle>
       <Link
         to="/projects"
-        className="rounded-full border-2 border-[#E3350D] bg-[#FFCC00] px-6 py-2.5 font-[DM_Sans] text-sm uppercase tracking-wide text-[#1a1a1a] transition-colors hover:bg-[#ffd633]"
+        className="rounded-full bg-[#FFCC00] px-6 py-2.5 font-[DM_Sans] text-sm uppercase tracking-wide text-[#1a1a1a] transition-colors hover:bg-[#ffd633]"
       >
         View Projects
       </Link>

@@ -17,7 +17,7 @@ interface ProjectSectionProps {
 function ProjectSection({ title, projects, trailingSlot }: ProjectSectionProps) {
   return (
     <section className="flex flex-col gap-6">
-      <h2 className="font-[DM_Sans] text-lg font-semibold uppercase tracking-wide text-[#E3350D]">
+      <h2 className="font-[DM_Sans] text-lg font-semibold uppercase tracking-wide text-[#1a1a1a]">
         {title}
       </h2>
       <div className="flex flex-wrap gap-6">
