@@ -4,12 +4,13 @@ import DocumentThumbnail from './DocumentThumbnail'
 
 interface DocumentCardProps {
   doc: JobDocument
+  projectId: string
 }
 
-function DocumentCard({ doc }: DocumentCardProps) {
+function DocumentCard({ doc, projectId }: DocumentCardProps) {
   return (
     <Link
-      to={`/documents/${doc.id}`}
+      to={`/projects/${projectId}/documents/${doc.id}`}
       className="flex min-h-44 flex-col overflow-hidden rounded-lg border border-black/10 bg-black/[0.03] transition-colors hover:bg-black/[0.05]"
     >
       <DocumentThumbnail doc={doc} className="h-20 w-full" />

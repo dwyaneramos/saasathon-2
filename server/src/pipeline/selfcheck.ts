@@ -5,6 +5,7 @@ import path from 'node:path';
 import { ingest } from './ingest.js';
 import { redactText } from './redact.js';
 import type { ExtractionDocument, Provenance } from './schema.js';
+import { WiringPlan } from './schema.js';
 import { validateExtraction } from './validate.js';
 
 function testRedact(): void {
@@ -43,7 +44,7 @@ function makeField<T>(
 }
 
 function makeTrace() {
-  return { doc_id: 'd1', page: 1, bbox: null, method: 'text-llm' as const, confidence: 0.9 };
+  return { doc_id: 'd1', page: 1, bbox: null, region: null, method: 'text-llm' as const, confidence: 0.9 };
 }
 
 function baseDoc(): ExtractionDocument {
@@ -54,6 +55,7 @@ function baseDoc(): ExtractionDocument {
     pages_total: 1,
     site_info: null,
     legend_items: [],
+    plan_symbols: [],
     circuits: [],
     switchboards: [],
     single_line_elements: [],
@@ -94,6 +96,7 @@ function testValidateFlagsDuplicateCircuitIds(): void {
     phase: makeField('1' as const),
     rated_current_a: makeField(10),
     switchboard_ref: makeField('SB1'),
+    length_m: makeField(12),
   });
   doc.circuits = [circuit('C1'), circuit('C1')];
   const validated = validateExtraction(doc);
@@ -112,10 +115,35 @@ function testValidateFlagsEmptyExtraction(): void {
   );
 }
 
+function testWiringPlanSchemaValidatesConfidence(): void {
+  const valid = WiringPlan.safeParse({
+    items: [
+      {
+        description: 'TPS 2.5mm2, DB1 -> Kitchen',
+        quantity: '18m',
+        price: null,
+        confidence: 'high',
+        reason: 'Single cable schedule row, confidence 0.95, no conflicts.',
+        needs_info: null,
+        sources: [{ doc_id: 'd1', item_ref: 'cable_schedule_rows[0]' }],
+      },
+    ],
+  });
+  assert.ok(valid.success, 'a well-formed wiring plan item should validate');
+
+  const invalid = WiringPlan.safeParse({
+    items: [
+      { description: 'x', quantity: null, confidence: 'certain', reason: 'x', needs_info: null, sources: [] },
+    ],
+  });
+  assert.ok(!invalid.success, 'an invalid confidence value should fail validation');
+}
+
 testRedact();
 testIngestTypeDetection();
 testValidateFlagsLowConfidenceAndMissingRule();
 testValidateFlagsDuplicateCircuitIds();
 testValidateFlagsEmptyExtraction();
+testWiringPlanSchemaValidatesConfidence();
 
 console.log('pipeline selfcheck: all assertions passed');

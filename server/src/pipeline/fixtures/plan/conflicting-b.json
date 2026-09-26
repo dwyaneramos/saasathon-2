@@ -1,0 +1,25 @@
+{
+  "doc_id": "conflict-b",
+  "source_file": "as-built-cable-schedule.csv",
+  "doc_type": "cable_schedule",
+  "pages_total": 1,
+  "site_info": null,
+  "legend_items": [],
+  "circuits": [],
+  "switchboards": [],
+  "single_line_elements": [],
+  "compliance_records": [],
+  "financial_line_items": [],
+  "cable_schedule_rows": [
+    {
+      "trace": { "doc_id": "conflict-b", "page": 1, "bbox": null, "method": "text-llm", "confidence": 0.9 },
+      "cable_id": { "value": "C5", "provenance": "extracted", "rule": null, "confidence": 0.9 },
+      "from_ref": { "value": "SB1", "provenance": "extracted", "rule": null, "confidence": 0.9 },
+      "to_ref": { "value": "DB-WORKSHOP", "provenance": "extracted", "rule": null, "confidence": 0.9 },
+      "cable_type": { "value": "TPS 4mm2", "provenance": "extracted", "rule": null, "confidence": 0.9 },
+      "length_m": { "value": 32, "provenance": "extracted", "rule": null, "confidence": 0.88 },
+      "notes": { "value": "as actually installed, differs from quote", "provenance": "extracted", "rule": null, "confidence": 0.88 }
+    }
+  ],
+  "needs_review": []
+}

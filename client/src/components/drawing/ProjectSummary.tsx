@@ -1,4 +1,4 @@
-import type { Project } from '../../data/projects'
+import type { Project } from '../../lib/projects'
 import type { MaterialsSummary } from '../../lib/materials'
 
 interface ProjectSummaryProps {

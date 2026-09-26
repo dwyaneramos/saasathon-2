@@ -1,0 +1,25 @@
+{
+  "doc_id": "conflict-a",
+  "source_file": "as-quoted-cable-schedule.csv",
+  "doc_type": "cable_schedule",
+  "pages_total": 1,
+  "site_info": null,
+  "legend_items": [],
+  "circuits": [],
+  "switchboards": [],
+  "single_line_elements": [],
+  "compliance_records": [],
+  "financial_line_items": [],
+  "cable_schedule_rows": [
+    {
+      "trace": { "doc_id": "conflict-a", "page": 1, "bbox": null, "method": "text-llm", "confidence": 0.92 },
+      "cable_id": { "value": "C5", "provenance": "extracted", "rule": null, "confidence": 0.92 },
+      "from_ref": { "value": "SB1", "provenance": "extracted", "rule": null, "confidence": 0.92 },
+      "to_ref": { "value": "DB-WORKSHOP", "provenance": "extracted", "rule": null, "confidence": 0.92 },
+      "cable_type": { "value": "TPS 2.5mm2", "provenance": "extracted", "rule": null, "confidence": 0.92 },
+      "length_m": { "value": 30, "provenance": "extracted", "rule": null, "confidence": 0.9 },
+      "notes": { "value": "from the original quote", "provenance": "extracted", "rule": null, "confidence": 0.9 }
+    }
+  ],
+  "needs_review": []
+}
