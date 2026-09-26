@@ -1,6 +1,7 @@
+import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import ARView from '../components/ar/ARView'
-import { getProjectById } from '../data/projects'
+import { getProjectById, type Project } from '../lib/projects'
 import { useDrawing } from '../lib/drawingStore'
 
 const backLinkClass =
@@ -8,8 +9,30 @@ const backLinkClass =
 
 function ARProjectPage() {
   const { id } = useParams<{ id: string }>()
-  const project = id ? getProjectById(id) : undefined
+  const [project, setProject] = useState<Project | null | undefined>(undefined)
   const store = useDrawing(id ?? '')
+
+  useEffect(() => {
+    if (!id) {
+      setProject(null)
+      return
+    }
+    let cancelled = false
+    getProjectById(id).then((result) => {
+      if (!cancelled) setProject(result)
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [id])
+
+  if (project === undefined) {
+    return (
+      <div className="flex min-h-svh flex-col gap-6 bg-black px-8 pt-6 pb-10">
+        <p className="font-[DM_Sans] text-sm text-white/70">Loading…</p>
+      </div>
+    )
+  }
 
   if (!project) {
     return (
