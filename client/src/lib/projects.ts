@@ -85,6 +85,28 @@ export async function getProjectById(id: string): Promise<Project | null> {
   return data ? toProject(data as ProjectRow) : null
 }
 
+export async function updateProjectDetails(
+  id: string,
+  details: { name: string; description: string },
+): Promise<Project> {
+  const { data, error } = await supabase
+    .from('projects')
+    .update({ name: details.name, description: details.description })
+    .eq('id', id)
+    .select()
+    .single()
+  if (error) throw new Error(error.message)
+  return toProject(data as ProjectRow)
+}
+
+// Documents and wiring plans are removed with it (on delete cascade in the migrations).
+export async function deleteProject(id: string): Promise<void> {
+  const { error, count } = await supabase.from('projects').delete({ count: 'exact' }).eq('id', id)
+  if (error) throw new Error(error.message)
+  // RLS silently filters rows you don't own, so a zero count means nothing was deleted.
+  if (count === 0) throw new Error("Project not found or you don't have permission to delete it.")
+}
+
 // owner/status/priority/progress aren't collected at creation time - the projects
 // table defaults them ('', 'Not started', 'Medium', 0) until they're set later.
 export async function addProject(input: NewProjectInput): Promise<Project> {

@@ -1,16 +1,25 @@
 import { useEffect, useState, type ReactNode } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import AddProjectCard from '../components/AddProjectCard'
+import { DeleteProjectDialog, EditProjectDialog } from '../components/ProjectDialogs'
 import ProjectCard from '../components/ProjectCard'
-import { listMyProjects, listSharedProjects, type Project } from '../lib/projects'
+import {
+  deleteProject,
+  listMyProjects,
+  listSharedProjects,
+  updateProjectDetails,
+  type Project,
+} from '../lib/projects'
 
 interface ProjectSectionProps {
   title: string
   projects: Project[]
   trailingSlot?: ReactNode
+  onEdit?: (project: Project) => void
+  onDelete?: (project: Project) => void
 }
 
-function ProjectSection({ title, projects, trailingSlot }: ProjectSectionProps) {
+function ProjectSection({ title, projects, trailingSlot, onEdit, onDelete }: ProjectSectionProps) {
   return (
     <section className="flex flex-col gap-6">
       <h2 className="font-[DM_Sans] text-lg font-semibold uppercase tracking-wide text-[#1a1a1a]">
@@ -18,7 +27,7 @@ function ProjectSection({ title, projects, trailingSlot }: ProjectSectionProps) 
       </h2>
       <div className="flex flex-wrap gap-6">
         {projects.map((project) => (
-          <ProjectCard key={project.id} project={project} />
+          <ProjectCard key={project.id} project={project} onEdit={onEdit} onDelete={onDelete} />
         ))}
         {trailingSlot}
       </div>
@@ -32,6 +41,8 @@ function ProjectsPage() {
   const [sharedProjects, setSharedProjects] = useState<Project[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [editing, setEditing] = useState<Project | null>(null)
+  const [deleting, setDeleting] = useState<Project | null>(null)
 
   useEffect(() => {
     let cancelled = false
@@ -73,10 +84,36 @@ function ProjectsPage() {
             title="My Projects"
             projects={myProjects}
             trailingSlot={<AddProjectCard onClick={() => navigate('/projects/new')} />}
+            onEdit={setEditing}
+            onDelete={setDeleting}
           />
 
           <ProjectSection title="Shared Projects" projects={sharedProjects} />
         </div>
+      )}
+
+      {editing && (
+        <EditProjectDialog
+          project={editing}
+          onCancel={() => setEditing(null)}
+          onSave={async (details) => {
+            const updated = await updateProjectDetails(editing.id, details)
+            setMyProjects((current) => current.map((p) => (p.id === updated.id ? updated : p)))
+            setEditing(null)
+          }}
+        />
+      )}
+
+      {deleting && (
+        <DeleteProjectDialog
+          project={deleting}
+          onCancel={() => setDeleting(null)}
+          onConfirm={async () => {
+            await deleteProject(deleting.id)
+            setMyProjects((current) => current.filter((p) => p.id !== deleting.id))
+            setDeleting(null)
+          }}
+        />
       )}
     </div>
   )
