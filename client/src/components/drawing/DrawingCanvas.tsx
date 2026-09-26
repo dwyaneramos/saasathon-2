@@ -1,21 +1,10 @@
 import { useEffect, useRef, useState } from 'react'
 import { DEFAULT_WIRE } from '../../data/catalogue'
-import { newId, type DrawingStore } from '../../lib/drawingStore'
+import { newId, nextComponentLabel, type DrawingStore } from '../../lib/drawingStore'
 import { wireLengthM, wirePath } from '../../lib/materials'
 import { zoomView, type View } from '../../lib/view'
-import type { ComponentKind, Point, Selection, Tool } from '../../types/drawing'
+import type { Point, Selection, Tool } from '../../types/drawing'
 import { ComponentSymbol } from './Symbols'
-
-const LABEL_PREFIX: Record<ComponentKind, string> = {
-  socket: 'PO',
-  'double-socket': 'PO',
-  switch: 'SW',
-  'two-way-switch': 'SW',
-  light: 'L',
-  downlight: 'DL',
-  switchboard: 'DB',
-  'junction-box': 'JB',
-}
 
 const SELECT_COLOUR = '#E3350D'
 const INK = '#1a1a1a'
@@ -187,8 +176,6 @@ function DrawingCanvas({ store, tool, setTool, selection, setSelection, view, se
         return
       }
       case 'place': {
-        const prefix = LABEL_PREFIX[tool.kind]
-        const count = drawing.components.filter((c) => LABEL_PREFIX[c.kind] === prefix).length
         const id = newId()
         store.addComponent({
           id,
@@ -196,7 +183,7 @@ function DrawingCanvas({ store, tool, setTool, selection, setSelection, view, se
           x: point.x,
           y: point.y,
           rotation: 0,
-          label: `${prefix}${count + 1}`,
+          label: nextComponentLabel(drawing.components, tool.kind),
         })
         setSelection({ type: 'component', id })
         return
@@ -218,13 +205,20 @@ function DrawingCanvas({ store, tool, setTool, selection, setSelection, view, se
         }
         const px = Math.hypot(point.x - calibrateStart.x, point.y - calibrateStart.y)
         setCalibrateStart(null)
-        if (px < 1) return
-        const answer = window.prompt('Real-world length of the line you just drew, in metres:', '1')
-        const metres = answer ? Number.parseFloat(answer) : NaN
-        if (Number.isFinite(metres) && metres > 0) {
-          store.setScale(metres / px)
-          setTool({ type: 'select' })
+        if (px < 1) {
+          window.alert('Those two points are too close together to calibrate from - try again with two points further apart.')
+          return
         }
+        const answer = window.prompt('Real-world length of the line you just drew, in metres:', '1')
+        if (answer === null) return // cancelled
+        const metres = Number.parseFloat(answer)
+        if (!Number.isFinite(metres) || metres <= 0) {
+          window.alert(`"${answer}" isn't a valid length in metres. Try the calibrate tool again.`)
+          return
+        }
+        store.setScale(metres / px)
+        setTool({ type: 'select' })
+        window.alert(`Scale set (${metres} m over that line). The drawing is now calibrated.`)
         return
       }
     }
