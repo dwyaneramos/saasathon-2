@@ -4,7 +4,7 @@ import { useAuth } from '../lib/auth'
 
 // Sends visitors without a session (real or demo) to /login, remembering where they were headed.
 function RequireAuth({ children }: { children: ReactNode }) {
-  const { user, loading } = useAuth()
+  const { user, isGuest, loading } = useAuth()
   const location = useLocation()
 
   if (loading) {
@@ -15,7 +15,7 @@ function RequireAuth({ children }: { children: ReactNode }) {
     )
   }
 
-  if (!user) {
+  if (!user && !isGuest) {
     return <Navigate to="/login" replace state={{ from: location.pathname + location.search }} />
   }
 
