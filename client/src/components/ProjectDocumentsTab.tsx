@@ -38,9 +38,11 @@ function formatTimestamp(iso: string): string {
 
 interface ProjectDocumentsTabProps {
   projectId: string
+  /** Called after an upload finishes, e.g. so compliance can re-check the new extractions. */
+  onDocumentsChanged?: () => void
 }
 
-function ProjectDocumentsTab({ projectId }: ProjectDocumentsTabProps) {
+function ProjectDocumentsTab({ projectId, onDocumentsChanged }: ProjectDocumentsTabProps) {
   const [documents, setDocuments] = useState<DocumentRow[]>([])
   const [loading, setLoading] = useState(true)
   const [uploading, setUploading] = useState(false)
@@ -84,6 +86,7 @@ function ProjectDocumentsTab({ projectId }: ProjectDocumentsTabProps) {
       if (!res.ok) throw new Error(body?.error ?? `request failed (${res.status})`)
       setFiles([])
       const docs = await refresh()
+      onDocumentsChanged?.()
 
       // Keep the Documents tab's card view in sync with what was just processed.
       const ranAt = formatTimestamp(new Date().toISOString())

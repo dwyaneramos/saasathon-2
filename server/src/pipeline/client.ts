@@ -17,6 +17,9 @@ export const CLASSIFY_MODEL = process.env.OPENAI_CLASSIFY_MODEL || 'gpt-6-luna';
 /** Flagship model for structured extraction - this is where wrong output costs the most downstream. */
 export const EXTRACT_MODEL = process.env.OPENAI_EXTRACT_MODEL || 'gpt-6-astra';
 
+/** Compliance review against AS/NZS 3000 / 3008.1.2 - reasoning-heavy, so defaults to the flagship tier. */
+export const COMPLIANCE_MODEL = process.env.OPENAI_COMPLIANCE_MODEL || EXTRACT_MODEL;
+
 /** Wiring plan synthesis reads the same extracted facts extraction was trusted with - same tier by default. */
 export const PLAN_MODEL = process.env.OPENAI_PLAN_MODEL || EXTRACT_MODEL;
 

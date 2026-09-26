@@ -24,6 +24,7 @@ export const COMPONENT_KINDS = Object.keys(COMPONENTS) as ComponentKind[]
 export const CABLE_TYPES: CableType[] = ['TPS 2C+E', 'TPS 3C+E', 'Flex 3C']
 export const CABLE_SIZES: CableSize[] = [1, 1.5, 2.5, 4, 6, 10]
 export const VOLTAGES: Voltage[] = [230, 400]
+export const BREAKER_RATINGS_A = [6, 10, 16, 20, 25, 32, 40, 50, 63]
 
 const PRICE_PER_METRE_BY_SIZE: Record<CableSize, number> = {
   1: 1.6,

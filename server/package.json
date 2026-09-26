@@ -10,7 +10,9 @@
     "start": "node dist/index.js",
     "pipeline": "tsx src/pipeline/cli.ts",
     "pipeline:selfcheck": "tsx src/pipeline/selfcheck.ts",
-    "plan:selfcheck": "tsx src/pipeline/plan.selfcheck.ts"
+    "plan:selfcheck": "tsx src/pipeline/plan.selfcheck.ts",
+    "cable-schedule:selfcheck": "tsx src/pipeline/cableSchedule.selfcheck.ts",
+    "compliance:selfcheck": "tsx src/compliance/selfcheck.ts"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.117.2",

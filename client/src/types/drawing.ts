@@ -37,6 +37,8 @@ export interface Wire {
   cableType: CableType
   sizeMm2: CableSize
   voltage: Voltage
+  /** Rating of the protective device (breaker) for this cable, in amps. */
+  protectionA?: number
   lengthOverrideM?: number
   circuit?: string
 }

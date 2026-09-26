@@ -5,6 +5,7 @@ import Inspector from '../components/drawing/Inspector'
 import ProjectSummary from '../components/drawing/ProjectSummary'
 import Toolbar from '../components/drawing/Toolbar'
 import UploadDropzone from '../components/drawing/UploadDropzone'
+import ComplianceBreaches from '../components/pipeline/ComplianceBreaches'
 import DocumentsPanel from '../components/documents/DocumentsPanel'
 import ProjectDocumentsTab from '../components/ProjectDocumentsTab'
 import { DEFAULT_WIRE } from '../data/catalogue'
@@ -13,6 +14,7 @@ import { detectDrawing } from '../lib/detectDrawing'
 import { newId, nextComponentLabel, useDrawing } from '../lib/drawingStore'
 import { loadDrawingFile } from '../lib/loadDrawingFile'
 import { computeMaterials } from '../lib/materials'
+import { useCompliance } from '../lib/useCompliance'
 import { fitView, zoomView, type View } from '../lib/view'
 import type { DrawingBackground, PlacedComponent, Selection, Tool } from '../types/drawing'
 
@@ -168,6 +170,12 @@ function ProjectWorkspace({ project }: { project: Project }) {
     }
   }
 
+  // Bumped after each document upload so compliance re-checks the new extractions.
+  const [documentsVersion, setDocumentsVersion] = useState(0)
+  // Quick Pipeline results live only in the browser, so they're sent along with the check.
+  const [quickDocs, setQuickDocs] = useState<unknown[]>([])
+  const compliance = useCompliance(drawing, project.id, documentsVersion, quickDocs)
+
   async function replaceFile(file: File) {
     try {
       await loadAndDetect(await loadDrawingFile(file))
@@ -177,24 +185,25 @@ function ProjectWorkspace({ project }: { project: Project }) {
   }
 
   return (
-    <div className="flex min-h-svh flex-col gap-6 px-6 pt-24 pb-6 lg:h-svh lg:flex-row">
-      <section className="flex min-h-[70svh] min-w-0 flex-1 flex-col gap-4 lg:min-h-0">
-        <div role="tablist" className="flex flex-wrap gap-1 self-start rounded-full border-2 border-[#1a1a1a] bg-white p-1">
-          {TABS.map((t) => (
-            <button
-              key={t.id}
-              type="button"
-              role="tab"
-              aria-selected={tab === t.id}
-              onClick={() => setTab(t.id)}
-              className={`rounded-full px-4 py-1.5 font-[DM_Sans] text-xs font-semibold tracking-wide text-[#1a1a1a] uppercase transition-colors ${
-                tab === t.id ? 'bg-[#FFCC00]' : 'hover:bg-black/[0.06]'
-              }`}
-            >
-              {t.label}
-            </button>
-          ))}
-        </div>
+    <div className="flex flex-col gap-6 pb-10">
+      <div className="flex min-h-svh flex-col gap-6 px-6 pt-24 pb-6 lg:h-svh lg:flex-row">
+        <section className="flex min-h-[70svh] min-w-0 flex-1 flex-col gap-4 lg:min-h-0">
+          <div role="tablist" className="flex flex-wrap gap-1 self-start rounded-full border-2 border-[#1a1a1a] bg-white p-1">
+            {TABS.map((t) => (
+              <button
+                key={t.id}
+                type="button"
+                role="tab"
+                aria-selected={tab === t.id}
+                onClick={() => setTab(t.id)}
+                className={`rounded-full px-4 py-1.5 font-[DM_Sans] text-xs font-semibold tracking-wide text-[#1a1a1a] uppercase transition-colors ${
+                  tab === t.id ? 'bg-[#FFCC00]' : 'hover:bg-black/[0.06]'
+                }`}
+              >
+                {t.label}
+              </button>
+            ))}
+          </div>
 
         {/* Kept mounted while hidden so pipeline results survive switching tabs. */}
         <div
@@ -205,42 +214,42 @@ function ProjectWorkspace({ project }: { project: Project }) {
           <ProjectDocumentsTab projectId={project.id} />
         </div>
 
-        <div
-          className={`min-h-0 flex-1 overflow-hidden rounded-lg border border-black/10 bg-black/[0.03] ${
-            tab === 'documents' ? '' : 'hidden'
-          }`}
-        >
-          <DocumentsPanel projectId={project.id} />
-        </div>
+          <div
+            className={`min-h-0 flex-1 overflow-hidden rounded-lg border border-black/10 bg-black/[0.03] ${
+              tab === 'documents' ? '' : 'hidden'
+            }`}
+          >
+            <DocumentsPanel projectId={project.id} />
+          </div>
 
-        <div
-          className={`relative min-h-0 flex-1 overflow-hidden rounded-lg border border-black/10 bg-black/[0.03] ${
-            tab === 'drawing' ? '' : 'hidden'
-          }`}
-        >
-          {!store.loaded ? (
-            <p className="p-6 font-[DM_Sans] text-sm text-black/50">Loading drawing…</p>
-          ) : tab !== 'drawing' ? null : background ? (
-            <DrawingCanvas
-              store={store}
-              tool={tool}
-              setTool={setTool}
-              selection={activeSelection}
-              setSelection={setSelection}
-              view={view}
-              setView={setView}
-            />
-          ) : (
-            <div className="h-full p-6">
-              <UploadDropzone onLoaded={(bg) => void loadAndDetect(bg)} />
-            </div>
-          )}
-          {background && (
-            <span className="pointer-events-none absolute top-3 left-3 rounded-full bg-white/90 px-3 py-1 font-[DM_Sans] text-[11px] text-black/60">
-              {background.fileName}
-              {drawing.metresPerPx ? '' : ' · scale not set'}
-            </span>
-          )}
+          <div
+            className={`relative min-h-0 flex-1 overflow-hidden rounded-lg border border-black/10 bg-black/[0.03] ${
+              tab === 'drawing' ? '' : 'hidden'
+            }`}
+          >
+            {!store.loaded ? (
+              <p className="p-6 font-[DM_Sans] text-sm text-black/50">Loading drawing…</p>
+            ) : tab !== 'drawing' ? null : background ? (
+              <DrawingCanvas
+                store={store}
+                tool={tool}
+                setTool={setTool}
+                selection={activeSelection}
+                setSelection={setSelection}
+                view={view}
+                setView={setView}
+              />
+            ) : (
+              <div className="h-full p-6">
+                <UploadDropzone onLoaded={(bg) => void loadAndDetect(bg)} />
+              </div>
+            )}
+            {background && (
+              <span className="pointer-events-none absolute top-3 left-3 rounded-full bg-white/90 px-3 py-1 font-[DM_Sans] text-[11px] text-black/60">
+                {background.fileName}
+                {drawing.metresPerPx ? '' : ' · scale not set'}
+              </span>
+            )}
           {detecting && (
             <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-3 bg-white/90 backdrop-blur-sm">
               <div className="h-8 w-8 animate-spin rounded-full border-2 border-black/15 border-t-[#E3350D]" />
@@ -251,35 +260,35 @@ function ProjectWorkspace({ project }: { project: Project }) {
               </p>
             </div>
           )}
-        </div>
-
-        {tab === 'drawing' && background && (
-          <div className="flex justify-center">
-            <Toolbar
-              tool={tool}
-              setTool={setTool}
-              canUndo={store.canUndo}
-              canRedo={store.canRedo}
-              canDelete={activeSelection !== null}
-              scaleSet={drawing.metresPerPx !== undefined}
-              onUndo={store.undo}
-              onRedo={store.redo}
-              onDelete={deleteSelection}
-              onZoomIn={() => setView((v) => zoomView(v, 1 / 1.25, viewCenter, background.width))}
-              onZoomOut={() => setView((v) => zoomView(v, 1.25, viewCenter, background.width))}
-              onFit={() => setView(() => fitted)}
-              onReplaceFile={(file) => void replaceFile(file)}
-            />
           </div>
-        )}
-      </section>
 
-      <aside className="flex w-full shrink-0 flex-col gap-4 lg:w-96 lg:min-h-0">
-        <Link to="/projects" className={backLinkClass} onClick={guardNavigation}>
-          ← My Projects
-        </Link>
-        <div className="flex items-center justify-between gap-4">
-          <h1 className="font-[DM_Sans] text-2xl font-semibold text-[#1a1a1a]">{project.name}</h1>
+          {tab === 'drawing' && background && (
+            <div className="flex justify-center">
+              <Toolbar
+                tool={tool}
+                setTool={setTool}
+                canUndo={store.canUndo}
+                canRedo={store.canRedo}
+                canDelete={activeSelection !== null}
+                scaleSet={drawing.metresPerPx !== undefined}
+                onUndo={store.undo}
+                onRedo={store.redo}
+                onDelete={deleteSelection}
+                onZoomIn={() => setView((v) => zoomView(v, 1 / 1.25, viewCenter, background.width))}
+                onZoomOut={() => setView((v) => zoomView(v, 1.25, viewCenter, background.width))}
+                onFit={() => setView(() => fitted)}
+                onReplaceFile={(file) => void replaceFile(file)}
+              />
+            </div>
+          )}
+        </section>
+
+        <aside className="flex w-full shrink-0 flex-col gap-4 lg:w-96 lg:min-h-0">
+          <Link to="/projects" className={backLinkClass} onClick={guardNavigation}>
+            ← My Projects
+          </Link>
+          <div className="flex items-center justify-between gap-4">
+            <h1 className="font-[DM_Sans] text-2xl font-semibold text-[#1a1a1a]">{project.name}</h1>
           <div className="flex shrink-0 gap-2">
             <Link
               to={`/projects/${project.id}/ar`}
@@ -288,18 +297,24 @@ function ProjectWorkspace({ project }: { project: Project }) {
             >
               View in AR
             </Link>
-            <Link
-              to={`/client/projects/${project.id}`}
+              <Link
+                to={`/client/projects/${project.id}`}
               onClick={guardNavigation}
-              className="rounded-full bg-[#FFCC00] px-4 py-1.5 font-[DM_Sans] text-xs font-semibold tracking-wide text-[#1a1a1a] uppercase transition-colors hover:bg-[#E3350D] hover:text-white"
-            >
-              Client view →
-            </Link>
+                className="rounded-full bg-[#FFCC00] px-4 py-1.5 font-[DM_Sans] text-xs font-semibold tracking-wide text-[#1a1a1a] uppercase transition-colors hover:bg-[#E3350D] hover:text-white"
+              >
+                Client view →
+              </Link>
           </div>
-        </div>
-        <Inspector store={store} selection={activeSelection} />
-        <ProjectSummary project={project} materials={materials} />
-      </aside>
+          </div>
+          <Inspector store={store} selection={activeSelection} />
+          <ProjectSummary project={project} materials={materials} />
+        </aside>
+      </div>
+
+      {/* Right padding = sidebar (w-96) + gap + page padding, so this lines up with the drawing column. */}
+      <div className="px-6 lg:pr-[calc(24rem+3rem)]">
+        <ComplianceBreaches state={compliance.state} onAskAi={compliance.askAi} />
+      </div>
     </div>
   )
 }

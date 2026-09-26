@@ -1,5 +1,6 @@
 import type { Project } from '../../lib/projects'
 import type { MaterialsSummary } from '../../lib/materials'
+import CableSchedule from './CableSchedule'
 
 interface ProjectSummaryProps {
   project: Project
@@ -74,6 +75,8 @@ function ProjectSummary({ project, materials }: ProjectSummaryProps) {
             </tbody>
           </table>
         )}
+
+        <CableSchedule projectId={project.id} />
       </div>
 
       <p className="text-[10px] text-black/40">Prices are indicative demo figures, not supplier quotes.</p>

@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react'
-import { CABLE_SIZES, CABLE_TYPES, COMPONENTS, COMPONENT_KINDS, VOLTAGES } from '../../data/catalogue'
+import { BREAKER_RATINGS_A, CABLE_SIZES, CABLE_TYPES, COMPONENTS, COMPONENT_KINDS, VOLTAGES } from '../../data/catalogue'
 import type { DrawingStore } from '../../lib/drawingStore'
 import { pathLengthPx, wirePath } from '../../lib/materials'
 import type { CableSize, CableType, ComponentKind, Selection, Voltage } from '../../types/drawing'
@@ -139,6 +139,22 @@ function Inspector({ store, selection }: InspectorProps) {
                 value={w.circuit ?? ''}
                 onChange={(e) => store.updateWire(w.id, { circuit: e.target.value || undefined })}
               />
+            </Field>
+            <Field label="Breaker">
+              <select
+                className={inputClass}
+                value={w.protectionA ?? ''}
+                onChange={(e) =>
+                  store.updateWire(w.id, { protectionA: e.target.value ? Number(e.target.value) : undefined })
+                }
+              >
+                <option value="">Not set</option>
+                {BREAKER_RATINGS_A.map((a) => (
+                  <option key={a} value={a}>
+                    {a} A
+                  </option>
+                ))}
+              </select>
             </Field>
           </div>
           <Field label="Length (m)">

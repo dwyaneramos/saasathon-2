@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { getSupabaseAdmin } from '../lib/supabaseAdmin.js';
+import { buildCableSchedule } from '../pipeline/cableSchedule.js';
 import { planWiring } from '../pipeline/plan.js';
 import type { ExtractionDocument } from '../pipeline/schema.js';
 
@@ -60,6 +61,26 @@ router.get('/:projectId/wiring-plan', async (req, res) => {
     return;
   }
   res.json({ plan: data ?? null });
+});
+
+// Deterministic cable schedule built straight from the project's extracted documents.
+router.get('/:projectId/cable-schedule', async (req, res) => {
+  const { projectId } = req.params;
+  const { data: rows, error } = await getSupabaseAdmin()
+    .from('documents')
+    .select('extraction')
+    .eq('project_id', projectId)
+    .eq('status', 'extracted');
+
+  if (error) {
+    res.status(500).json({ error: error.message });
+    return;
+  }
+
+  const docs = (rows ?? [])
+    .map((row) => row.extraction as ExtractionDocument | null)
+    .filter((doc): doc is ExtractionDocument => doc != null);
+  res.json({ entries: buildCableSchedule(docs), documentCount: docs.length });
 });
 
 export default router;
