@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom'
-import { STATUS_LABEL, STATUS_STYLE, type JobDocument } from '../data/documents'
+import { STATUS_LABEL, STATUS_STYLE, type JobDocument } from '../lib/documents'
 import DocumentThumbnail from './DocumentThumbnail'
 
 interface DocumentCardProps {

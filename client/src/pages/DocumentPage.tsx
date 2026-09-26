@@ -1,18 +1,35 @@
 import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import DocumentThumbnail from '../components/DocumentThumbnail'
-import { STATUS_LABEL, STATUS_STYLE } from '../data/documents'
+import { getDocumentById, STATUS_LABEL, STATUS_STYLE, type JobDocument } from '../lib/documents'
 import { getProjectById, type Project } from '../lib/projects'
-import { useDocuments } from '../lib/documentStore'
 
 const labelClass = 'font-[DM_Sans] text-xs uppercase tracking-wide text-black/50'
 const panelClass = 'rounded-lg border border-black/10 bg-black/[0.03] p-5'
 
 function DocumentPage() {
   const { id } = useParams<{ id: string }>()
-  const { documents, loaded } = useDocuments()
-  const doc = id ? documents.find((document) => document.id === id) : undefined
+  const [doc, setDoc] = useState<JobDocument | null | undefined>(undefined)
   const [project, setProject] = useState<Project | null>(null)
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (!id) {
+      setDoc(null)
+      return
+    }
+    let cancelled = false
+    getDocumentById(id)
+      .then((result) => {
+        if (!cancelled) setDoc(result)
+      })
+      .catch((err: unknown) => {
+        if (!cancelled) setError(err instanceof Error ? err.message : String(err))
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [id])
 
   useEffect(() => {
     if (!doc) return
@@ -29,6 +46,14 @@ function DocumentPage() {
     }
   }, [doc])
 
+  if (error) {
+    return (
+      <div className="mx-auto flex min-h-svh max-w-5xl flex-col gap-4 px-8 pt-28 pb-10">
+        <p className="font-[DM_Sans] text-sm text-[#E3350D]">Failed to load document: {error}</p>
+      </div>
+    )
+  }
+
   if (!doc) {
     return (
       <div className="mx-auto flex min-h-svh max-w-5xl flex-col gap-4 px-8 pt-28 pb-10">
@@ -36,7 +61,7 @@ function DocumentPage() {
           ← My Projects
         </Link>
         <p className="font-[DM_Sans] text-[#1a1a1a]">
-          {loaded ? 'Document not found.' : 'Loading document…'}
+          {doc === undefined ? 'Loading document…' : 'Document not found.'}
         </p>
       </div>
     )

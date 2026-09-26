@@ -1,4 +1,4 @@
-import { fileExtension, type JobDocument } from '../data/documents'
+import { fileExtension, type JobDocument } from '../lib/documents'
 
 // Same diagonal hatch the project cards use, so both card types read as one set.
 const HATCH_BACKGROUND =

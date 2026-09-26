@@ -6,7 +6,6 @@ import ProjectSummary from '../components/drawing/ProjectSummary'
 import Toolbar from '../components/drawing/Toolbar'
 import UploadDropzone from '../components/drawing/UploadDropzone'
 import DocumentsPanel from '../components/documents/DocumentsPanel'
-import DocumentPipeline from '../components/pipeline/DocumentPipeline'
 import ProjectDocumentsTab from '../components/ProjectDocumentsTab'
 import { getProjectById, type Project } from '../lib/projects'
 import { useDrawing } from '../lib/drawingStore'
@@ -15,12 +14,11 @@ import { computeMaterials } from '../lib/materials'
 import { fitView, zoomView, type View } from '../lib/view'
 import type { Selection, Tool } from '../types/drawing'
 
-type WorkspaceTab = 'drawing' | 'aiPipeline' | 'pipeline' | 'documents'
+type WorkspaceTab = 'drawing' | 'aiPipeline' | 'documents'
 
 const TABS: { id: WorkspaceTab; label: string }[] = [
   { id: 'drawing', label: 'Drawing' },
   { id: 'aiPipeline', label: 'Document Pipeline' },
-  { id: 'pipeline', label: 'Quick Pipeline' },
   { id: 'documents', label: 'Documents' },
 ]
 
@@ -107,14 +105,6 @@ function ProjectWorkspace({ project }: { project: Project }) {
           }`}
         >
           <ProjectDocumentsTab projectId={project.id} />
-        </div>
-
-        <div
-          className={`min-h-0 flex-1 overflow-hidden rounded-lg border border-black/10 bg-black/[0.03] ${
-            tab === 'pipeline' ? '' : 'hidden'
-          }`}
-        >
-          <DocumentPipeline projectId={project.id} />
         </div>
 
         <div

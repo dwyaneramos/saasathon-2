@@ -155,7 +155,7 @@ router.get('/:projectId/documents', async (req, res) => {
   const admin = getSupabaseAdmin();
   const { data, error } = await admin
     .from('documents')
-    .select('id, source_file, doc_type, status, needs_review_count, created_at')
+    .select('id, source_file, doc_type, status, needs_review_count, created_at, extraction->pages_total')
     .eq('project_id', projectId)
     .order('created_at', { ascending: false });
 
