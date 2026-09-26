@@ -1,5 +1,6 @@
-import { Route, Routes } from 'react-router-dom'
+import { Link, Route, Routes } from 'react-router-dom'
 import LandingPage from './pages/LandingPage'
+import PipelineTestPage from './pages/PipelineTestPage'
 import ProjectOverviewPage from './pages/ProjectOverviewPage'
 import ProjectsPage from './pages/ProjectsPage'
 
@@ -20,6 +21,9 @@ function App() {
           <a href="#" className={navLinkClass}>
             Pricing
           </a>
+          <Link to="/pipeline" className={navLinkClass}>
+            Pipeline
+          </Link>
         </div>
         <a
           href="#"
@@ -32,6 +36,7 @@ function App() {
         <Route path="/" element={<LandingPage />} />
         <Route path="/projects" element={<ProjectsPage />} />
         <Route path="/projects/:id" element={<ProjectOverviewPage />} />
+        <Route path="/pipeline" element={<PipelineTestPage />} />
       </Routes>
     </div>
   )
