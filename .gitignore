@@ -1,6 +1,10 @@
 node_modules/
 dist/
 .env
+# Vite reads client/.env.local, which holds the demo account password. Only the
+# .example files are safe to track.
+.env.local
+.env.*.local
 .DS_Store
 *.log
 *.tsbuildinfo

@@ -1,9 +1,6 @@
 import { useState, type FormEvent, type ReactNode } from 'react'
-import { Link } from 'react-router-dom'
-import SetupPanel from '../components/sheets/SetupPanel'
-import { buildChecklist } from '../data/sheets'
-import { addProject, type Project, type ProjectType } from '../lib/projects'
-import { useSheetSet } from '../lib/sheets'
+import { Link, useNavigate } from 'react-router-dom'
+import { addProject, type ProjectType } from '../lib/projects'
 
 const PROJECT_TYPES: ProjectType[] = ['Residential', 'Commercial']
 
@@ -30,10 +27,8 @@ function Field({ label, htmlFor, className = '', children }: FieldProps) {
 }
 
 function NewProjectPage() {
+  const navigate = useNavigate()
   const [name, setName] = useState('')
-  const [createdProject, setCreatedProject] = useState<Project | null>(null)
-  const { sheets } = useSheetSet(createdProject?.id ?? '')
-  const checklist = buildChecklist(sheets)
   const [type, setType] = useState<ProjectType>('Residential')
   const [address, setAddress] = useState('')
   const [startDate, setStartDate] = useState('')
@@ -60,56 +55,11 @@ function NewProjectPage() {
         dueDate,
         description: description.trim(),
       })
-      // Straight to the drawing set: the job isn't really created until the set is in,
-      // and every sheet added from here is saved immediately, so leaving loses nothing.
-      setCreatedProject(project)
+      navigate(`/projects/${project.id}`)
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err))
       setSubmitting(false)
     }
-  }
-
-  if (createdProject) {
-    return (
-      <div className="mx-auto flex min-h-svh max-w-3xl flex-col gap-6 px-8 py-10">
-        <Link
-          to={`/projects/${createdProject.id}`}
-          className="self-start font-[DM_Sans] text-xs uppercase tracking-wide text-black/50 hover:text-black"
-        >
-          ← {createdProject.name}
-        </Link>
-
-        <div className="flex flex-col gap-1">
-          <span className="font-[DM_Sans] text-xs uppercase tracking-wide text-black/50">
-            Step 2 of 2
-          </span>
-          <h1 className="font-[DM_Sans] text-2xl font-semibold text-[#1a1a1a]">
-            {createdProject.name}
-          </h1>
-          <p className="font-[DM_Sans] text-sm text-black/60">
-            Created. Now add its drawing set — one sheet at a time.
-          </p>
-        </div>
-
-        <SetupPanel projectId={createdProject.id} showProcessAction={false} />
-
-        <div className="flex flex-wrap items-center gap-3 border-t border-black/10 pt-6">
-          <Link
-            to={`/projects/${createdProject.id}`}
-            className="rounded-full bg-[#FFCC00] px-5 py-2 font-[DM_Sans] text-xs font-semibold uppercase tracking-wide text-[#1a1a1a] transition-colors hover:bg-[#E3350D] hover:text-white"
-          >
-            {checklist.complete ? 'Open job' : 'Finish later'}
-          </Link>
-          <span className="font-[DM_Sans] text-xs text-black/50">
-            {checklist.complete
-              ? 'Set is complete — cross-referencing is unlocked.'
-              : `Still missing ${checklist.missing.length} required sheet${
-                  checklist.missing.length === 1 ? '' : 's'
-                }. Everything you add is saved, so you can come back to it.`}
-          </span>
-        </div>
-      </div>
-    )
   }
 
   return (
@@ -121,12 +71,7 @@ function NewProjectPage() {
         ← My Projects
       </Link>
 
-      <div className="flex flex-col gap-1">
-        <span className="font-[DM_Sans] text-xs uppercase tracking-wide text-black/50">
-          Step 1 of 2
-        </span>
-        <h1 className="font-[DM_Sans] text-2xl font-semibold text-[#1a1a1a]">New Project</h1>
-      </div>
+      <h1 className="font-[DM_Sans] text-2xl font-semibold text-[#1a1a1a]">New Project</h1>
 
       <form onSubmit={handleSubmit} className="grid grid-cols-1 gap-6 sm:grid-cols-2">
         <Field label="Project Name" htmlFor="name" className="sm:col-span-2">
@@ -226,7 +171,7 @@ function NewProjectPage() {
             disabled={submitting}
             className="rounded-full bg-[#FFCC00] px-5 py-2 font-[DM_Sans] text-xs font-semibold uppercase tracking-wide text-[#1a1a1a] transition-colors hover:bg-[#E3350D] hover:text-white disabled:cursor-not-allowed disabled:opacity-40"
           >
-            {submitting ? 'Creating…' : 'Next: add drawing set'}
+            {submitting ? 'Creating…' : 'Create Project'}
           </button>
         </div>
       </form>

@@ -41,7 +41,7 @@ function App() {
         <Route path="/projects" element={<RequireAuth><ProjectsPage /></RequireAuth>} />
         <Route path="/projects/new" element={<RequireAuth><NewProjectPage /></RequireAuth>} />
         <Route path="/projects/:id" element={<RequireAuth><ProjectOverviewPage /></RequireAuth>} />
-        <Route path="/projects/:projectId/documents/:docId" element={<RequireAuth><DocumentPage /></RequireAuth>} />
+        <Route path="/documents/:id" element={<RequireAuth><DocumentPage /></RequireAuth>} />
         <Route path="/client/projects/:id" element={<RequireAuth><ClientProjectPage /></RequireAuth>} />
         <Route path="/projects/:id/ar" element={<RequireAuth><ARProjectPage /></RequireAuth>} />
       </Routes>

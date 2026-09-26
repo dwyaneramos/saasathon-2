@@ -9,7 +9,6 @@ import drawingDetectRouter from './routes/drawingDetect.js';
 import helloRouter from './routes/hello.js';
 import pipelineRouter from './routes/pipeline.js';
 import projectDocumentsRouter from './routes/project-documents.js';
-import projectSheetsRouter from './routes/project-sheets.js';
 import wiringPlanRouter from './routes/wiring-plan.js';
 
 const app = express();
@@ -24,7 +23,6 @@ app.use('/api/pipeline', pipelineRouter);
 app.use('/api/drawing', drawingDetectRouter);
 app.use('/api/projects', projectDocumentsRouter);
 app.use('/api/projects', wiringPlanRouter);
-app.use('/api/projects', projectSheetsRouter);
 
 app.get('/api/health', (_req, res) => {
   res.json({ status: 'ok' });

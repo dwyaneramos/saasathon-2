@@ -6,16 +6,14 @@ import ProjectSummary from '../components/drawing/ProjectSummary'
 import Toolbar from '../components/drawing/Toolbar'
 import UploadDropzone from '../components/drawing/UploadDropzone'
 import DocumentsPanel from '../components/documents/DocumentsPanel'
-import SetupPanel from '../components/sheets/SetupPanel'
+import DocumentPipeline from '../components/pipeline/DocumentPipeline'
 import ProjectDocumentsTab from '../components/ProjectDocumentsTab'
 import { DEFAULT_WIRE } from '../data/catalogue'
-import { buildChecklist, SHEET_TYPE_LABEL } from '../data/sheets'
 import { getProjectById, type Project } from '../lib/projects'
 import { detectDrawing } from '../lib/detectDrawing'
 import { newId, nextComponentLabel, useDrawing } from '../lib/drawingStore'
 import { loadDrawingFile } from '../lib/loadDrawingFile'
 import { computeMaterials } from '../lib/materials'
-import { useSheetSet } from '../lib/sheets'
 import { fitView, zoomView, type View } from '../lib/view'
 import type { DrawingBackground, PlacedComponent, Selection, Tool } from '../types/drawing'
 
@@ -24,18 +22,14 @@ import type { DrawingBackground, PlacedComponent, Selection, Tool } from '../typ
 const AUTO_PLACE_CONFIDENCE = 0.5
 const AUTO_SCALE_CONFIDENCE = 0.5
 
-type WorkspaceTab = 'drawing' | 'setup' | 'aiPipeline' | 'documents'
+type WorkspaceTab = 'drawing' | 'aiPipeline' | 'pipeline' | 'documents'
 
 const TABS: { id: WorkspaceTab; label: string }[] = [
   { id: 'drawing', label: 'Drawing' },
-  { id: 'setup', label: 'Setup' },
   { id: 'aiPipeline', label: 'Document Pipeline' },
+  { id: 'pipeline', label: 'Quick Pipeline' },
   { id: 'documents', label: 'Documents' },
 ]
-
-/** Tabs that need a complete drawing set. Drawing is deliberately excluded - it's an
- *  independent manual tool with its own background upload, not a pipeline output. */
-const GATED_TABS: WorkspaceTab[] = ['aiPipeline', 'documents']
 
 const backLinkClass =
   'self-start font-[DM_Sans] text-xs uppercase tracking-wide text-black/50 hover:text-black'
@@ -45,20 +39,12 @@ function ProjectWorkspace({ project }: { project: Project }) {
   const { drawing } = store
   const background = drawing.background
 
-  const sheetSet = useSheetSet(project.id)
-  const checklist = useMemo(() => buildChecklist(sheetSet.sheets), [sheetSet.sheets])
-
   const [searchParams] = useSearchParams()
   const [tab, setTab] = useState<WorkspaceTab>(() => {
     // Lets the document page link back to the tab it came from.
     const requested = searchParams.get('tab')
     return TABS.some((t) => t.id === requested) ? (requested as WorkspaceTab) : 'drawing'
   })
-
-  // Send an incomplete job straight to the checklist rather than an empty pipeline.
-  useEffect(() => {
-    if (!checklist.complete && !searchParams.get('tab')) setTab('setup')
-  }, [checklist.complete, searchParams])
   const [tool, setTool] = useState<Tool>({ type: 'select' })
   const [selection, setSelection] = useState<Selection>(null)
   const [detecting, setDetecting] = useState(false)
@@ -203,45 +189,38 @@ function ProjectWorkspace({ project }: { project: Project }) {
               role="tab"
               aria-selected={tab === t.id}
               onClick={() => setTab(t.id)}
-              className={`flex items-center gap-1.5 rounded-full px-4 py-1.5 font-[DM_Sans] text-xs font-semibold tracking-wide text-[#1a1a1a] uppercase transition-colors ${
+              className={`rounded-full px-4 py-1.5 font-[DM_Sans] text-xs font-semibold tracking-wide text-[#1a1a1a] uppercase transition-colors ${
                 tab === t.id ? 'bg-[#FFCC00]' : 'hover:bg-black/[0.06]'
               }`}
             >
               {t.label}
-              {!checklist.complete && GATED_TABS.includes(t.id) && (
-                <span aria-hidden className="text-[#E3350D]">
-                  ●
-                </span>
-              )}
             </button>
           ))}
-        </div>
-
-        <div
-          className={`min-h-0 flex-1 overflow-auto rounded-lg border border-black/10 bg-black/[0.03] p-6 ${
-            tab === 'setup' ? '' : 'hidden'
-          }`}
-        >
-          <SetupPanel projectId={project.id} sheetSet={sheetSet} />
         </div>
 
         {/* Kept mounted while hidden so pipeline results survive switching tabs. */}
         <div
           className={`min-h-0 flex-1 overflow-auto rounded-lg border border-black/10 bg-black/[0.03] p-6 ${
-            tab === 'aiPipeline' && checklist.complete ? '' : 'hidden'
+            tab === 'aiPipeline' ? '' : 'hidden'
           }`}
         >
-          {checklist.complete ? (
-            <ProjectDocumentsTab projectId={project.id} />
-          ) : null}
+          <ProjectDocumentsTab projectId={project.id} />
         </div>
 
         <div
           className={`min-h-0 flex-1 overflow-hidden rounded-lg border border-black/10 bg-black/[0.03] ${
-            tab === 'documents' && checklist.complete ? '' : 'hidden'
+            tab === 'pipeline' ? '' : 'hidden'
           }`}
         >
-          {checklist.complete ? <DocumentsPanel projectId={project.id} /> : null}
+          <DocumentPipeline projectId={project.id} />
+        </div>
+
+        <div
+          className={`min-h-0 flex-1 overflow-hidden rounded-lg border border-black/10 bg-black/[0.03] ${
+            tab === 'documents' ? '' : 'hidden'
+          }`}
+        >
+          <DocumentsPanel projectId={project.id} />
         </div>
 
         <div
@@ -309,25 +288,6 @@ function ProjectWorkspace({ project }: { project: Project }) {
         <Link to="/projects" className={backLinkClass} onClick={guardNavigation}>
           ← My Projects
         </Link>
-        {!checklist.complete && (
-          <div className="rounded-lg border border-[#E3350D]/30 bg-[#E3350D]/5 p-4">
-            <p className="font-[DM_Sans] text-xs font-semibold uppercase tracking-wide text-[#E3350D]">
-              Drawing set incomplete
-            </p>
-            <p className="mt-1 font-[DM_Sans] text-xs text-black/70">
-              Cross-referencing and documents stay locked until the set has a{' '}
-              {checklist.missing.map((t) => SHEET_TYPE_LABEL[t]).join(', a ')} and a single-line
-              diagram.
-            </p>
-            <button
-              type="button"
-              onClick={() => setTab('setup')}
-              className="mt-3 font-[DM_Sans] text-xs font-semibold uppercase tracking-wide text-[#E3350D] underline-offset-2 hover:underline"
-            >
-              Add sheets →
-            </button>
-          </div>
-        )}
         <div className="flex items-center justify-between gap-4">
           <h1 className="font-[DM_Sans] text-2xl font-semibold text-[#1a1a1a]">{project.name}</h1>
           <div className="flex shrink-0 gap-2">

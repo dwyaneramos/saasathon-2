@@ -31,8 +31,8 @@ interface ProjectRow {
   status: string
   owner: string
   priority: string
-  start_date: string
-  due_date: string
+  start_date: string | null
+  due_date: string | null
   progress: number
   description: string
   type: ProjectType
@@ -40,8 +40,12 @@ interface ProjectRow {
 }
 
 // Matches the display format the UI has always used, e.g. "Sep 12, 2026".
-function formatDate(isoDate: string): string {
+// start_date/due_date are nullable columns, so a row saved without dates must render
+// as a placeholder rather than throwing and taking the whole project list down with it.
+function formatDate(isoDate: string | null): string {
+  if (!isoDate) return 'Not set'
   const [year, month, day] = isoDate.split('-').map(Number)
+  if ([year, month, day].some((part) => !Number.isFinite(part))) return 'Not set'
   return new Date(year, month - 1, day).toLocaleDateString('en-US', {
     month: 'short',
     day: 'numeric',

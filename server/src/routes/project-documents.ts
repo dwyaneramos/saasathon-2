@@ -150,33 +150,12 @@ router.post('/:projectId/documents', upload.array('files'), async (req, res) => 
   }
 });
 
-router.get('/:projectId/documents/:docId', async (req, res) => {
-  const { projectId, docId } = req.params;
-  const admin = getSupabaseAdmin();
-  const { data, error } = await admin
-    .from('documents')
-    .select('id, source_file, doc_type, status, needs_review_count, sheet_type, size_bytes, created_at, extraction')
-    .eq('id', docId)
-    .eq('project_id', projectId)
-    .maybeSingle();
-
-  if (error) {
-    res.status(500).json({ error: error.message });
-    return;
-  }
-  if (!data) {
-    res.status(404).json({ error: 'document not found for this project' });
-    return;
-  }
-  res.json({ document: data });
-});
-
 router.get('/:projectId/documents', async (req, res) => {
   const { projectId } = req.params;
   const admin = getSupabaseAdmin();
   const { data, error } = await admin
     .from('documents')
-    .select('id, source_file, doc_type, status, needs_review_count, sheet_type, created_at')
+    .select('id, source_file, doc_type, status, needs_review_count, created_at')
     .eq('project_id', projectId)
     .order('created_at', { ascending: false });
 
