@@ -31,6 +31,12 @@ export const Trace = z.object({
     .object({ x: z.number(), y: z.number(), w: z.number(), h: z.number() })
     .nullable()
     .describe('Normalized 0-1 bounding box on the page, when the model can identify one; null otherwise.'),
+  /**
+   * Human-readable location as a drafter would say it - a grid reference ("C7"), a schedule
+   * row ("row 4"), a zone. Preferred over bbox for reviewer-facing text, and often the only
+   * location a schedule row has.
+   */
+  region: z.string().nullable(),
   method: z.enum(['vision-llm', 'text-llm', 'local-parse']),
   confidence: z.number().min(0).max(1),
 });
@@ -38,7 +44,10 @@ export type Trace = z.infer<typeof Trace>;
 
 export const DocType = z.enum([
   'site_plan',
+  'power_plan',
+  'lighting_rcp_plan',
   'wiring_layout_plan',
+  'lv_specialty_plan',
   'switchboard_schedule',
   'single_line_diagram',
   'legend',
@@ -51,6 +60,14 @@ export const DocType = z.enum([
   'other_noise',
 ]);
 export type DocType = z.infer<typeof DocType>;
+
+/** Sheet types that carry a physical circuit. Drives how a sheet participates in the merge. */
+export const PLAN_DOC_TYPES: DocType[] = [
+  'site_plan',
+  'power_plan',
+  'lighting_rcp_plan',
+  'wiring_layout_plan',
+];
 
 // ---- Classification (cheap model, noise filter) ----
 
@@ -83,6 +100,27 @@ export const LegendItem = withTrace({
   symbol: field(z.string()).describe('Symbol as drawn or labelled, in the surveyor/drafter\'s own words.'),
   meaning: field(z.string()),
 });
+
+/**
+ * A symbol read off a power/lighting/site plan. This is the only entity that lets a plan be
+ * cross-referenced against a panel schedule, so it is deliberately conservative: `circuit_tag`
+ * and `rated_current_a` stay null unless the plan actually prints them, and `symbol_meaning`
+ * stays null when the sheet carries no legend (see the legend gate in the merge module).
+ */
+export const PlanSymbol = withTrace({
+  symbol_label: field(z.string()).describe('The symbol as drawn or annotated, e.g. "S" with a triangle.'),
+  symbol_meaning: field(
+    z.string(),
+  ).describe('Meaning per THIS sheet\'s own legend. Null when the sheet has no legend - never a generic default.'),
+  legend_ref: field(z.string()).describe('Which legend item on this sheet defines it; null when none does.'),
+  circuit_tag: field(z.string()).describe('Circuit number/tag written next to the symbol, exactly as printed. Null when not written.'),
+  switchboard_ref: field(z.string()).describe('Board serving this symbol, when the plan states it. Null when not stated.'),
+  load_description: field(z.string()).describe('Room or load label as written on the plan; null when absent.'),
+  rated_current_a: field(
+    z.number(),
+  ).describe('Rating written next to the symbol, when the plan states one. Null otherwise - never inferred from the load.'),
+});
+export type PlanSymbol = z.infer<typeof PlanSymbol>;
 
 export const Circuit = withTrace({
   circuit_id: field(z.string()),
@@ -150,6 +188,8 @@ export const ExtractionDocument = z.object({
   pages_total: z.number().int().nullable(),
   site_info: SiteInfo.nullable(),
   legend_items: z.array(LegendItem),
+  /** Ordered ahead of `circuits` in the brief: read a sheet's legend before interpreting it. */
+  plan_symbols: z.array(PlanSymbol),
   circuits: z.array(Circuit),
   switchboards: z.array(SwitchboardSchedule),
   single_line_elements: z.array(SingleLineElement),
