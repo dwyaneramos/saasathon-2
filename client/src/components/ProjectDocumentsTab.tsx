@@ -123,6 +123,16 @@ function ProjectDocumentsTab({ projectId, onDocumentsChanged }: ProjectDocuments
         }),
       )
 
+      // The request succeeds even when individual files fail - surface those failures.
+      const problems = [
+        ...results.filter((r) => r.status === 'error').map((r) => `${r.sourceFile}: ${r.error ?? 'failed'}`),
+        ...((body.skippedFiles ?? []) as { sourceFile: string; reason: string }[]).map(
+          (s) => `${s.sourceFile}: skipped (${s.reason})`,
+        ),
+      ]
+      if (results.length === 0 && problems.length === 0) problems.push('No documents were processed.')
+      if (problems.length > 0) setError(problems.join('\n'))
+
       // Regenerate the plan whenever a fresh extraction is available, so it always
       // reflects everything uploaded so far, without waiting for a manual click.
       if (docs.some((doc) => doc.status === 'extracted')) {
@@ -173,7 +183,7 @@ function ProjectDocumentsTab({ projectId, onDocumentsChanged }: ProjectDocuments
       </form>
 
       {error && (
-        <p className="rounded-lg border border-[#E3350D]/30 bg-[#E3350D]/5 p-4 font-[DM_Sans] text-sm text-[#E3350D]">
+        <p className="rounded-lg border border-[#E3350D]/30 bg-[#E3350D]/5 p-4 whitespace-pre-line font-[DM_Sans] text-sm text-[#E3350D]">
           {error}
         </p>
       )}

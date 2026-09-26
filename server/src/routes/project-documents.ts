@@ -120,8 +120,9 @@ router.post('/:projectId/documents', upload.array('files'), async (req, res) => 
       } catch (err) {
         // Errors are logged per-document, never silently swallowed or allowed to abort
         // the rest of the batch - the source file is untouched either way.
-        const message = err instanceof Error ? err.message : String(err);
-        const { data: inserted } = await admin
+        let message = err instanceof Error ? err.message : String(err);
+        console.error(`[documents] ${projectId}/${doc.sourceFile} failed: ${message}`);
+        const { data: inserted, error: recordError } = await admin
           .from('documents')
           .insert({
             project_id: projectId,
@@ -135,6 +136,11 @@ router.post('/:projectId/documents', upload.array('files'), async (req, res) => 
           })
           .select('id')
           .single();
+        if (recordError) {
+          // Otherwise the failure vanishes: nothing in the documents list, nothing in the UI.
+          console.error(`[documents] couldn't record the failure for ${doc.sourceFile}: ${recordError.message}`);
+          message += ` (and it couldn't be saved to the documents list: ${recordError.message})`;
+        }
         results.push({
           docId: inserted?.id ?? storageId,
           sourceFile: doc.sourceFile,
@@ -148,6 +154,7 @@ router.post('/:projectId/documents', upload.array('files'), async (req, res) => 
 
     res.json({ results, skippedFiles: skipped });
   } catch (err) {
+    console.error(`[documents] upload for project ${projectId} failed:`, err);
     res.status(500).json({ error: err instanceof Error ? err.message : String(err) });
   } finally {
     rmSync(inputDir, { recursive: true, force: true });
