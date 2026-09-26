@@ -25,6 +25,7 @@ import type { DrawingBackground, PlacedComponent, Selection, Tool } from '../typ
 const AUTO_PLACE_CONFIDENCE = 0.5
 const AUTO_SCALE_CONFIDENCE = 0.5
 
+// Workspaces for the app
 type WorkspaceTab = 'drawing' | 'analyse' | 'documents'
 
 const TABS: { id: WorkspaceTab; label: string }[] = [
