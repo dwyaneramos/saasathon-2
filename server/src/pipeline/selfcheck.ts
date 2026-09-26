@@ -119,6 +119,7 @@ function testWiringPlanSchemaValidatesConfidence(): void {
       {
         description: 'TPS 2.5mm2, DB1 -> Kitchen',
         quantity: '18m',
+        price: null,
         confidence: 'high',
         reason: 'Single cable schedule row, confidence 0.95, no conflicts.',
         needs_info: null,

@@ -1,0 +1,30 @@
+{
+  "doc_id": "scaled-1",
+  "source_file": "site-plan-with-scale.pdf",
+  "doc_type": "site_plan",
+  "pages_total": 1,
+  "site_info": null,
+  "legend_items": [],
+  "circuits": [],
+  "switchboards": [],
+  "single_line_elements": [],
+  "compliance_records": [],
+  "financial_line_items": [],
+  "cable_schedule_rows": [
+    {
+      "trace": { "doc_id": "scaled-1", "page": 1, "bbox": null, "method": "vision-llm", "confidence": 0.9 },
+      "cable_id": { "value": "C7", "provenance": "extracted", "rule": null, "confidence": 0.9 },
+      "from_ref": { "value": "SB1", "provenance": "extracted", "rule": null, "confidence": 0.9 },
+      "to_ref": { "value": "DB-STUDIO", "provenance": "extracted", "rule": null, "confidence": 0.9 },
+      "cable_type": { "value": "TPS 2.5mm2", "provenance": "extracted", "rule": null, "confidence": 0.9 },
+      "length_m": {
+        "value": 14,
+        "provenance": "inferred",
+        "rule": "scaled from 1:100 site plan, +20% routing allowance",
+        "confidence": 0.6
+      },
+      "notes": { "value": "", "provenance": "extracted", "rule": null, "confidence": 0.9 }
+    }
+  ],
+  "needs_review": []
+}

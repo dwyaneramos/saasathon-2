@@ -6,11 +6,14 @@ type PlanConfidence = 'low' | 'medium' | 'high'
 interface WiringPlanItem {
   description: string
   quantity: string | null
+  price: number | null
   confidence: PlanConfidence
   reason: string
   needs_info: string | null
   sources: { doc_id: string; item_ref: string }[]
 }
+
+const nzd = new Intl.NumberFormat('en-NZ', { style: 'currency', currency: 'NZD' })
 
 interface WiringPlanRow {
   id: string
@@ -79,6 +82,8 @@ const WiringPlanPanel = forwardRef<WiringPlanPanelHandle, WiringPlanPanelProps>(
   const sortedItems = plan
     ? [...plan.items].sort((a, b) => CONFIDENCE_ORDER[a.confidence] - CONFIDENCE_ORDER[b.confidence])
     : []
+  const pricedItems = sortedItems.filter((item) => item.price != null)
+  const pricedTotal = pricedItems.reduce((sum, item) => sum + (item.price ?? 0), 0)
 
   return (
     <div className="flex flex-col gap-4 border-t border-black/10 pt-6">
@@ -108,15 +113,30 @@ const WiringPlanPanel = forwardRef<WiringPlanPanelHandle, WiringPlanPanelProps>(
 
       {plan && (
         <div className="flex flex-col gap-3">
-          <p className="font-[DM_Sans] text-xs uppercase tracking-wide text-black/50">
-            Generated {new Date(plan.generated_at).toLocaleString()}
-          </p>
+          <div className="flex flex-wrap items-baseline justify-between gap-2">
+            <p className="font-[DM_Sans] text-xs uppercase tracking-wide text-black/50">
+              Generated {new Date(plan.generated_at).toLocaleString()}
+            </p>
+            {pricedItems.length > 0 && (
+              <p className="font-[DM_Sans] text-sm text-[#1a1a1a]">
+                <span className="text-xs uppercase tracking-wide text-black/50">Priced so far </span>
+                <span className="font-semibold">{nzd.format(pricedTotal)}</span>
+                {pricedItems.length < sortedItems.length && (
+                  <span className="text-xs text-black/50">
+                    {' '}
+                    ({pricedItems.length} of {sortedItems.length} items - the rest have no stated price yet)
+                  </span>
+                )}
+              </p>
+            )}
+          </div>
           {sortedItems.map((item, i) => (
             <div key={i} className="flex flex-col gap-2 rounded-lg border border-black/10 bg-black/[0.03] p-4">
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <span className="font-[DM_Sans] text-sm font-semibold text-[#1a1a1a]">
                   {item.description}
                   {item.quantity && ` — ${item.quantity}`}
+                  {item.price != null && ` · ${nzd.format(item.price)}`}
                 </span>
                 <span
                   className={`rounded-full px-2.5 py-0.5 font-[DM_Sans] text-xs font-semibold uppercase ${CONFIDENCE_STYLE[item.confidence]}`}

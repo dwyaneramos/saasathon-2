@@ -37,6 +37,36 @@ async function testConflictingSourcesAreFlagged(): Promise<void> {
   );
 }
 
+async function testScaledLengthNeverReachesHighConfidence(): Promise<void> {
+  const plan = await planWiring([loadFixture('inferred-length.json')]);
+  assert.ok(plan.items.length > 0, 'expected at least one item from a scaled-length fixture');
+  assert.ok(
+    plan.items.every((item) => item.confidence !== 'high'),
+    'a quantity scaled from a drawing should never qualify an item as high confidence',
+  );
+  assert.ok(
+    plan.items.some((item) => /scal|estimat/i.test(item.reason)),
+    'the reason should call out that the length is a scaled estimate, not a printed measurement',
+  );
+}
+
+async function testStatedQuotePriceIsCited(): Promise<void> {
+  const plan = await planWiring([loadFixture('priced-schedule.json'), loadFixture('priced-quote.json')]);
+  assert.ok(plan.items.length > 0, 'expected at least one item from the priced fixtures');
+  assert.ok(
+    plan.items.some((item) => item.price === 225),
+    'a price stated on a matching quote line item should be cited on the wiring plan item',
+  );
+}
+
+async function testNoStatedPriceStaysNull(): Promise<void> {
+  const plan = await planWiring([loadFixture('clean.json')]);
+  assert.ok(
+    plan.items.every((item) => item.price === null),
+    'an item with no matching priced source document should never get an invented price',
+  );
+}
+
 if (!process.env.OPENAI_API_KEY) {
   console.log('plan selfcheck: skipped (OPENAI_API_KEY not set)');
   process.exit(0);
@@ -45,5 +75,8 @@ if (!process.env.OPENAI_API_KEY) {
 await testCleanSingleSourceIsHighConfidence();
 await testMissingQuantityIsLowConfidence();
 await testConflictingSourcesAreFlagged();
+await testScaledLengthNeverReachesHighConfidence();
+await testStatedQuotePriceIsCited();
+await testNoStatedPriceStaysNull();
 
 console.log('plan selfcheck: all assertions passed');

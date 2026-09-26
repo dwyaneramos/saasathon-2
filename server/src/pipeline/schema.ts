@@ -175,6 +175,10 @@ export const PlanSource = z.object({
 export const WiringPlanItem = z.object({
   description: z.string(),
   quantity: z.string().nullable().describe('As stated in a source document, e.g. "40m" - null when no source states a quantity.'),
+  price: z
+    .number()
+    .nullable()
+    .describe('NZD, only when a source quote/invoice line item states one for this item - never computed, estimated, or averaged.'),
   confidence: PlanConfidence,
   reason: z.string().describe('Why this confidence, citing agreement/conflict/completeness across sources.'),
   needs_info: z.string().nullable().describe('What is missing or conflicting; null only when confidence is high.'),
