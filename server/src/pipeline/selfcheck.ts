@@ -16,14 +16,16 @@ function testRedact(): void {
   assert.ok(out.includes('Jane Doe'), 'names are a documented limitation, not redacted by this regex pass');
 }
 
-function testIngestTypeDetection(): void {
+async function testIngestTypeDetection(): Promise<void> {
   const dir = mkdtempSync(path.join(tmpdir(), 'pipeline-selfcheck-'));
   try {
     writeFileSync(path.join(dir, 'cable-schedule.csv'), 'cable_id,from,to\nC1,DB1,SB1\n');
     writeFileSync(path.join(dir, 'notes.docx'), 'not really a docx');
-    const { docs, skipped } = ingest(dir);
+    const { docs, skipped } = await ingest(dir);
     assert.equal(docs.length, 1, 'the .csv should be ingested');
     assert.equal(docs[0]?.contentBlock.type, 'input_text');
+    assert.equal(docs[0]?.pages.length, 1, 'a non-PDF file is a single page');
+    assert.equal(docs[0]?.pages[0]?.contentBlock.type, 'input_text');
     assert.equal(skipped.length, 1, 'the unsupported .docx should be logged, not silently dropped');
     assert.equal(skipped[0]?.sourceFile, 'notes.docx');
   } finally {
@@ -140,7 +142,7 @@ function testWiringPlanSchemaValidatesConfidence(): void {
 }
 
 testRedact();
-testIngestTypeDetection();
+await testIngestTypeDetection();
 testValidateFlagsLowConfidenceAndMissingRule();
 testValidateFlagsDuplicateCircuitIds();
 testValidateFlagsEmptyExtraction();

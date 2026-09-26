@@ -12,13 +12,12 @@ function displayName(user: User): string {
 
 // Nav bar slot: a Login button when signed out, name + Log out when signed in.
 function AccountMenu() {
-  const { user, isGuest, loading, signOut } = useAuth()
+  const { user, loading, signOut } = useAuth()
   const navigate = useNavigate()
 
   if (loading) return <span className="w-16" />
 
-  // Guests are signed in as the demo account behind the scenes, but the nav treats them as logged out.
-  if (!user || isGuest) {
+  if (!user) {
     return (
       <Link to="/login" className={pillClass}>
         Login

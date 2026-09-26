@@ -1,5 +1,5 @@
 import { zodTextFormat } from 'openai/helpers/zod';
-import { CLASSIFY_MODEL, getOpenAI, refusalReason } from './client.js';
+import { CLASSIFY_MODEL, getOpenAI, incompleteReason, refusalReason } from './client.js';
 import type { IngestedDoc } from './ingest.js';
 import { ClassificationResult } from './schema.js';
 
@@ -32,10 +32,13 @@ export async function classifyDoc(doc: IngestedDoc): Promise<ClassificationResul
 
   if (!response.output_parsed) {
     const refusal = refusalReason(response.output);
+    const incomplete = incompleteReason(response);
     throw new Error(
       refusal
         ? `classification refused for ${doc.sourceFile}: ${refusal}`
-        : `classification returned no parsable structured output for ${doc.sourceFile} (status: ${response.status})`,
+        : incomplete
+          ? `classification incomplete for ${doc.sourceFile}: ${incomplete}`
+          : `classification returned no parsable structured output for ${doc.sourceFile} (status: ${response.status})`,
     );
   }
   return response.output_parsed;

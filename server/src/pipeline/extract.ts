@@ -1,7 +1,8 @@
 import { zodTextFormat } from 'openai/helpers/zod';
-import { EXTRACT_MODEL, getOpenAI, refusalReason } from './client.js';
-import type { IngestedDoc } from './ingest.js';
-import { ClassificationResult, ExtractionDocument } from './schema.js';
+import { EXTRACT_MODEL, getOpenAI, incompleteReason, refusalReason } from './client.js';
+import type { IngestedDoc, IngestedPage } from './ingest.js';
+import { forcePageNumber, mergePageExtractions } from './merge.js';
+import { ClassificationResult, ExtractionDocument, type PageClassification } from './schema.js';
 
 const INSTRUCTIONS = `You extract structured data for a New Zealand electrical contractor's job archive from the attached document (a site plan, power plan, lighting/RCP plan, wiring/electrical layout plan, LV or specialty plan, switchboard/panel schedule, single-line diagram, legend, or legacy job paperwork - COC, ESC, quote, invoice, or cable schedule).
 
@@ -25,7 +26,21 @@ On plan sheets, the order below is mandatory - symbol legends are NOT standardiz
 9. Only then populate \`plan_symbols\`, interpreting each symbol via a \`legend_ref\` pointing at this sheet's legend. If the sheet has NO legend, leave every \`symbol_meaning\` and \`legend_ref\` null, set their confidence low, and add one needs_review entry saying the sheet has no legend - never substitute a generic or "typical" legend.
 10. \`circuit_tag\` is whatever circuit number is physically written next to the symbol, exactly as printed. Null when no number is written. \`rated_current_a\` is a rating printed next to the symbol - never a rating you worked out from the load type. Record what the sheets actually disagree about rather than reconciling it: if a plan and a schedule are uploaded together and disagree, extract both as printed and let the merge stage raise the conflict.`;
 
-export async function extractDoc(doc: IngestedDoc, classification: ClassificationResult): Promise<ExtractionDocument> {
+const NO_CLASSIFICATION_FALLBACK: Omit<PageClassification, 'page'> = {
+  doc_type: 'other_noise',
+  is_noise: false,
+  noise_reason: null,
+  confidence: 0.1,
+};
+
+/** Extracts a single page. A whole multi-page document is never sent in one call - see
+ * extractDoc - so this always stays well under the model's output-token limit regardless of
+ * how many pages the source file has. */
+async function extractOnePage(
+  doc: IngestedDoc,
+  page: IngestedPage,
+  pageClassification: PageClassification,
+): Promise<ExtractionDocument> {
   const stream = getOpenAI().responses.stream({
     model: EXTRACT_MODEL,
     instructions: INSTRUCTIONS,
@@ -34,10 +49,10 @@ export async function extractDoc(doc: IngestedDoc, classification: Classificatio
       {
         role: 'user',
         content: [
-          doc.contentBlock,
+          page.contentBlock,
           {
             type: 'input_text',
-            text: `doc_id: ${doc.docId}\nsource_file: ${doc.sourceFile}\npage classification from the triage pass:\n${JSON.stringify(classification.pages, null, 2)}`,
+            text: `doc_id: ${doc.docId}\nsource_file: ${doc.sourceFile}\nThis is page ${page.page} of ${doc.pages.length} in the source file - the attached content is only this one page. Extract only what's on it.\npage classification from the triage pass:\n${JSON.stringify(pageClassification, null, 2)}`,
           },
         ],
       },
@@ -49,11 +64,27 @@ export async function extractDoc(doc: IngestedDoc, classification: Classificatio
 
   if (!response.output_parsed) {
     const refusal = refusalReason(response.output);
+    const incomplete = incompleteReason(response);
     throw new Error(
       refusal
-        ? `extraction refused for ${doc.sourceFile}: ${refusal}`
-        : `extraction returned no parsable structured output for ${doc.sourceFile} (status: ${response.status})`,
+        ? `extraction refused for ${doc.sourceFile} page ${page.page}: ${refusal}`
+        : incomplete
+          ? `extraction incomplete for ${doc.sourceFile} page ${page.page}: ${incomplete}`
+          : `extraction returned no parsable structured output for ${doc.sourceFile} page ${page.page} (status: ${response.status})`,
     );
   }
-  return response.output_parsed;
+  return forcePageNumber(response.output_parsed, page.page);
+}
+
+/** Extracts each page of the document independently and merges the results, so a large or
+ * detailed document's total extraction output is never bounded by a single request's
+ * output-token limit the way sending the whole file in one call was. */
+export async function extractDoc(doc: IngestedDoc, classification: ClassificationResult): Promise<ExtractionDocument> {
+  const classificationByPage = new Map(classification.pages.map((p) => [p.page, p]));
+  const pageResults: ExtractionDocument[] = [];
+  for (const page of doc.pages) {
+    const pageClassification = classificationByPage.get(page.page) ?? { ...NO_CLASSIFICATION_FALLBACK, page: page.page };
+    pageResults.push(await extractOnePage(doc, page, pageClassification));
+  }
+  return mergePageExtractions(pageResults, doc.docId, doc.sourceFile, doc.pages.length);
 }

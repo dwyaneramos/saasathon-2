@@ -78,6 +78,7 @@ export const PageClassification = z.object({
   noise_reason: z.string().nullable(),
   confidence: z.number().min(0).max(1),
 });
+export type PageClassification = z.infer<typeof PageClassification>;
 
 export const ClassificationResult = z.object({
   doc_id: z.string(),
