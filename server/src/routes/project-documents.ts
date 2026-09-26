@@ -43,7 +43,7 @@ router.post('/:projectId/documents', upload.array('files'), async (req, res) => 
       renameSync(file.path, path.join(inputDir, path.basename(file.originalname)));
     }
 
-    const { docs, skipped } = ingest(inputDir);
+    const { docs, skipped } = await ingest(inputDir);
     const results: DocumentResult[] = [];
 
     for (const doc of docs) {
@@ -159,7 +159,7 @@ router.get('/:projectId/documents', async (req, res) => {
   const admin = getSupabaseAdmin();
   const { data, error } = await admin
     .from('documents')
-    .select('id, source_file, doc_type, status, needs_review_count, created_at, extraction')
+    .select('id, source_file, doc_type, status, needs_review_count, created_at, extraction, error')
     .eq('project_id', projectId)
     .order('created_at', { ascending: false });
 

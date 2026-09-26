@@ -1,4 +1,5 @@
 import OpenAI from 'openai';
+import type { Response } from 'openai/resources/responses/responses';
 
 let client: OpenAI | null = null;
 
@@ -35,4 +36,12 @@ export function refusalReason(output: unknown): string | null {
     }
   }
   return null;
+}
+
+/** Human-readable reason a Responses API call didn't finish, if the response reports one. */
+export function incompleteReason(response: Response): string | null {
+  const reason = response.incomplete_details?.reason;
+  if (!reason) return null;
+  if (reason === 'max_output_tokens') return 'hit the max_output_tokens limit before finishing - document is likely too large/detailed for a single pass';
+  return reason;
 }

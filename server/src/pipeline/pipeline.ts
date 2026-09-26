@@ -25,7 +25,7 @@ export interface RunManifest {
 
 export async function runPipeline(inputDir: string, outputDir: string): Promise<RunManifest> {
   mkdirSync(outputDir, { recursive: true });
-  const { docs, skipped } = ingest(inputDir);
+  const { docs, skipped } = await ingest(inputDir);
 
   const manifest: RunManifest = {
     ranAt: new Date().toISOString(),
